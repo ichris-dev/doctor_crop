@@ -1,6 +1,6 @@
 workflows:
   sample-workflow:
-    name: iOS Only Build
+    name: iOS Simulator Build
     max_build_duration: 120
     instance_type: mac_mini_m2
     working_directory: agriconnect_v0
@@ -29,19 +29,19 @@ workflows:
           pod install
           cd ..
 
-      - name: Build iOS app
+      - name: Build iOS Simulator app
         script: |
-          flutter build ios --release --no-codesign
+          flutter build ios --simulator --release
 
-      - name: Prepare iOS artifact
+      - name: Zip simulator app
         script: |
           mkdir -p build/ios/output
-          cd build/ios/iphoneos
-          zip -r ../output/Runner.app.zip Runner.app
+          cd build/ios/iphonesimulator
+          zip -r ../output/Runner-simulator.app.zip Runner.app
 
     artifacts:
       - agriconnect_v0/build/ios/output/*.zip
-      - agriconnect_v0/build/ios/iphoneos/Runner.app
+      - agriconnect_v0/build/ios/iphonesimulator/Runner.app
 
     publishing:
       email:
