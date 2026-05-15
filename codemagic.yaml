@@ -3,6 +3,7 @@ workflows:
     name: Codemagic Sample Workflow
     max_build_duration: 120
     instance_type: mac_mini_m2
+    working_directory: agriconnect_v0
 
     environment:
       flutter: stable
@@ -10,12 +11,11 @@ workflows:
       cocoapods: default
 
     scripts:
-      - name: Check project files
+      - name: Check files
         script: |
           pwd
           ls -la
           flutter --version
-          test -f pubspec.yaml || (echo "ERROR: pubspec.yaml not found. Set correct project path/root folder in Codemagic." && exit 1)
 
       - name: Get Flutter packages
         script: |
@@ -29,9 +29,14 @@ workflows:
         script: |
           flutter build appbundle --release
 
+      - name: Build iOS IPA
+        script: |
+          flutter build ipa --release --no-codesign
+
     artifacts:
-      - build/app/outputs/flutter-apk/*.apk
-      - build/app/outputs/bundle/release/*.aab
+      - agriconnect_v0/build/app/outputs/flutter-apk/*.apk
+      - agriconnect_v0/build/app/outputs/bundle/release/*.aab
+      - agriconnect_v0/build/ios/ipa/*.ipa
 
     publishing:
       email:
