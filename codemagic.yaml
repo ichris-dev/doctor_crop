@@ -23,21 +23,6 @@ workflows:
         script: |
           flutter pub get
 
-      - name: Install iOS pods
-        script: |
-          cd ios
-          pod install
-          cd ..
-
-      - name: Build iOS Simulator app
-        script: |
-          flutter build ios --simulator --release
-
-      - name: Zip simulator app
-        script: |
-          mkdir -p build/ios/output
-          cd build/ios/iphonesimulator
-          zip -r ../output/Runner-simulator.app.zip Runner.app
 
     artifacts:
       - agriconnect_v0/build/ios/output/*.zip
