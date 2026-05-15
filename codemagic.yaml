@@ -1,6 +1,6 @@
 workflows:
   sample-workflow:
-    name: Codemagic Sample Workflow
+    name: iOS Only Build
     max_build_duration: 120
     instance_type: mac_mini_m2
     working_directory: agriconnect_v0
@@ -11,32 +11,37 @@ workflows:
       cocoapods: default
 
     scripts:
-      - name: Check files
+      - name: Check Flutter project
         script: |
           pwd
           ls -la
+          test -f pubspec.yaml || (echo "pubspec.yaml not found" && exit 1)
+          test -d ios || (echo "ios folder not found" && exit 1)
           flutter --version
 
       - name: Get Flutter packages
         script: |
           flutter pub get
 
-      - name: Build Android APK
+      - name: Install iOS pods
         script: |
-          flutter build apk --release
+          cd ios
+          pod install
+          cd ..
 
-      - name: Build Android App Bundle
+      - name: Build iOS app
         script: |
-          flutter build appbundle --release
+          flutter build ios --release --no-codesign
 
-      - name: Build iOS IPA
+      - name: Prepare iOS artifact
         script: |
-          flutter build ipa --release --no-codesign
+          mkdir -p build/ios/output
+          cd build/ios/iphoneos
+          zip -r ../output/Runner.app.zip Runner.app
 
     artifacts:
-      - agriconnect_v0/build/app/outputs/flutter-apk/*.apk
-      - agriconnect_v0/build/app/outputs/bundle/release/*.aab
-      - agriconnect_v0/build/ios/ipa/*.ipa
+      - agriconnect_v0/build/ios/output/*.zip
+      - agriconnect_v0/build/ios/iphoneos/Runner.app
 
     publishing:
       email:
