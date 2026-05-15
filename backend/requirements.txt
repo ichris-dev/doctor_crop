@@ -1,0 +1,15 @@
+fastapi
+uvicorn
+asyncpg
+httpx
+psycopg2-binary
+sqlalchemy
+websockets
+tensorflow
+PIL
+ollama
+asyncio
+pydantic
+config
+typing
+shutil
