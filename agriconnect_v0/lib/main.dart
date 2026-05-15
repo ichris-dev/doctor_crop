@@ -15,7 +15,7 @@ void main() async {
   runApp(const AgroConnectApp());
 }
 
-class AgroConnectApp extends StatelessWidget {
+class AgroConnetctApp extends StatelessWidget {
   const AgroConnectApp({super.key});
 
   @override
