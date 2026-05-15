@@ -30,7 +30,7 @@ workflows:
 
       - name: Build iOS Simulator
         script: |
-          flutter build ios --simulator --release
+          flutter build ios --simulator --debug
 
       - name: Zip Simulator App
         script: |
