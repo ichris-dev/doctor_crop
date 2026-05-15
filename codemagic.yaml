@@ -16,17 +16,31 @@ workflows:
           pwd
           ls -la
           test -f pubspec.yaml || (echo "pubspec.yaml not found" && exit 1)
-          test -d ios || (echo "ios folder not found" && exit 1)
           flutter --version
 
       - name: Get Flutter packages
         script: |
           flutter pub get
 
+      - name: Install CocoaPods
+        script: |
+          cd ios
+          pod install
+          cd ..
+
+      - name: Build iOS Simulator
+        script: |
+          flutter build ios --simulator --release
+
+      - name: Zip Simulator App
+        script: |
+          mkdir -p build/ios/output
+          cd build/ios/iphonesimulator
+          zip -r ../output/Runner-simulator.zip Runner.app
 
     artifacts:
       - agriconnect_v0/build/ios/output/*.zip
-      - agriconnect_v0/build/ios/iphonesimulator/Runner.app
+      - agriconnect_v0/build/ios/iphonesimulator/*.app
 
     publishing:
       email:
