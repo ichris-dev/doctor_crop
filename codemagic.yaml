@@ -15,12 +15,22 @@ workflows:
         script: |
           flutter pub get
 
-      - name: Build iOS IPA
+      - name: Build iOS Project
         script: |
-          flutter build ipa --release
+          # Use 'ios' with 'no-codesign' to bypass the Apple Developer requirement
+          flutter build ios --release --no-codesign
+
+      - name: Create Manual IPA
+        script: |
+          # Manually package the app into an IPA format for Sideloadly
+          cd build/ios/iphoneos
+          mkdir Payload
+          cp -r Runner.app Payload
+          zip -vr Runner.ipa Payload
 
     artifacts:
-      - build/ios/ipa/*.ipa
+      # This points directly to your newly created IPA file
+      - build/ios/iphoneos/Runner.ipa
 
     publishing:
       email:
