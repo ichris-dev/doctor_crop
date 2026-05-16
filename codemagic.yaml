@@ -1,6 +1,6 @@
 workflows:
   sample-workflow:
-    name: iOS Device Build IPA
+    name: iOS Device Build (IPA)
     max_build_duration: 120
     instance_type: mac_mini_m2
     working_directory: agriconnect_v0
@@ -15,20 +15,22 @@ workflows:
         script: |
           flutter pub get
 
-      - name: Build iOS app without codesign
+      - name: Build iOS Project
         script: |
+          # Build the release bundle
           flutter build ios --release --no-codesign
 
-      - name: Create unsigned IPA
+      - name: Create Manual IPA
         script: |
-          mkdir -p build/ios/ipa/Payload
-          cp -R build/ios/iphoneos/Runner.app build/ios/ipa/Payload/
-          cd build/ios/ipa
-          zip -r Runner.ipa Payload
+          # This creates the Payload folder and zips it into an .ipa file
+          mkdir -p build/ios/iphoneos/Payload
+          cp -r build/ios/iphoneos/Runner.app build/ios/iphoneos/Payload/
+          cd build/ios/iphoneos && zip -r Runner.ipa Payload
 
     artifacts:
-      - build/ios/ipa/Runner.ipa
-      - build/ios/iphoneos/Runner.app
+      # This updated path will find the manual IPA we just created
+      - build/ios/iphoneos/*.ipa
+      - /tmp/xcodebuild_logs/*.log
 
     publishing:
       email:
