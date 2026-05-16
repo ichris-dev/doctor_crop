@@ -1,6 +1,6 @@
 workflows:
-  sample-workflow:
-    name: iOS Device Build (IPA)
+  ios-release:
+    name: iOS Signed IPA Build
     max_build_duration: 120
     instance_type: mac_mini_m2
     working_directory: agriconnect_v0
@@ -10,26 +10,30 @@ workflows:
       xcode: latest
       cocoapods: default
 
+      ios_signing:
+        distribution_type: development
+        bundle_identifier: com.example.agriconnectv0
+
+    integrations:
+      app_store_connect: codemagic
+
     scripts:
       - name: Get Flutter packages
         script: |
           flutter pub get
 
-      - name: Build iOS Project
+      - name: Install CocoaPods
         script: |
-          # Build the release bundle
-          flutter build ios --release --no-codesign
+          cd ios
+          pod install
+          cd ..
 
-      - name: Create Manual IPA
+      - name: Build signed IPA
         script: |
-          # This creates the Payload folder and zips it into an .ipa file
-          mkdir -p build/ios/iphoneos/Payload
-          cp -r build/ios/iphoneos/Runner.app build/ios/iphoneos/Payload/
-          cd build/ios/iphoneos && zip -r Runner.ipa Payload
+          flutter build ipa --release
 
     artifacts:
-      # This updated path will find the manual IPA we just created
-      - build/ios/iphoneos/*.ipa
+      - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
 
     publishing:
