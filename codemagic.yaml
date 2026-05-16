@@ -1,6 +1,6 @@
 workflows:
   sample-workflow:
-    name: iOS Simulator Build
+    name: iOS Device Build (IPA)
     max_build_duration: 120
     instance_type: mac_mini_m2
     working_directory: agriconnect_v0
@@ -11,20 +11,19 @@ workflows:
       cocoapods: default
 
     scripts:
-      - name: Check Flutter project
+      - name: Get Flutter packages
         script: |
-          flutter --version
           flutter pub get
 
-      - name: Build iOS Simulator
+      - name: Build iOS IPA
         script: |
-          # This command creates the actual .app file
-          flutter build ios --debug --simulator
+          # This creates the .ipa file for your physical iPhone
+          flutter build ios --release --no-codesign
 
     artifacts:
-      # These paths match the standard Flutter build output
-      - build/ios/iphonesimulator/*.app
-      - /tmp/xcodebuild_logs/*.log
+      # This path will find the IPA file you need for your iPhone
+      - build/ios/iphoneos/*.app
+      - build/ios/ipa/*.ipa
 
     publishing:
       email:
