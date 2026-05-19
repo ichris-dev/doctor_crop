@@ -17,22 +17,23 @@ workflows:
 
       - name: Build iOS Project
         script: |
-          # Use 'ios' with 'no-codesign' to bypass the Apple Developer requirement
-          flutter build ios --release --no-codesign
+          # Bypasses Apple Developer Team requirement by compiling for simulator
+          flutter build ios --simulator --no-codesign
 
       - name: Create Manual IPA
         script: |
-          # Manually package the app into an IPA format for Sideloadly
-          cd build/ios/iphoneos
+          # Packages the simulator files into the IPA format Sideloadly needs
+          cd build/ios/iphonesimulator
           mkdir Payload
           cp -r Runner.app Payload
           zip -vr Runner.ipa Payload
 
     artifacts:
-      # This points directly to your newly created IPA file
-      - build/ios/iphoneos/Runner.ipa
+      # The final output file you will download
+      - build/ios/iphonesimulator/Runner.ipa
 
     publishing:
       email:
         recipients:
           - cyusaimpanochrispin@gmail.com
+          - hassanousman1010@gmail.com
