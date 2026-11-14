@@ -1,10 +1,9 @@
 // ignore_for_file: non_constant_identifier_names
 
 import 'dart:convert';
-
-import 'package:agriconnect_v0/loadingpage.dart';
 import 'package:agriconnect_v0/notifier.dart';
 import 'package:agriconnect_v0/registerPage.dart';
+import 'package:agriconnect_v0/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
@@ -19,113 +18,132 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  bool _obscurePassword = true;
+  bool _isLoading = false;
 
   Future<bool> loginUser() async {
-    final response = await http.post(
-      Uri.parse("http://192.168.50.36:8000/login"),
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode({
-        "phone_number": phoneController.text,
-        "password": passwordController.text,
-      }),
-    );
+    try {
+      final response = await http.post(
+        Uri.parse("http://192.168.50.36:8000/login"),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "phone_number": phoneController.text.trim(),
+          "password": passwordController.text,
+        }),
+      );
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      if (data["success"] == true) {
-        final user = data['user_data']; // now a single dict
-        sessionNotifier.value = SessionUser(
-          userId: user['user_id'],
-          fullName: user['full_name'],
-          phoneNumber: phoneController.text,
-        );
-        return true;
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data["success"] == true) {
+          final user = data['user_data'];
+          sessionNotifier.value = SessionUser(
+            userId: user['user_id'],
+            fullName: user['full_name'],
+            phoneNumber: phoneController.text.trim(),
+          );
+          return true;
+        }
       }
+      return false;
+    } catch (e) {
+      return false;
     }
-    return false;
   }
 
-  // Update login() to call both in parallel
   void login() async {
+    if (phoneController.text.trim().isEmpty || passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Please enter both phone number and password"),
+          backgroundColor: DoctorCropColors.accent,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
     final bool success = await loginUser();
     if (!mounted) return;
 
     if (success) {
       final user = sessionNotifier.value;
       if (user != null) {
-        await Future.wait([
-          fetchUsersExceptCurrentUser(user.phoneNumber),
-          fetchUserStore(user.phoneNumber),
-        ]);
+        try {
+          await Future.wait([
+            fetchUsersExceptCurrentUser(user.phoneNumber),
+            fetchUserStore(user.phoneNumber),
+          ]);
+        } catch (_) {}
       }
+      setState(() => _isLoading = false);
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => widget.homePage),
       );
     } else {
+      setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("Wrong phone number or password"),
-          backgroundColor: Colors.redAccent,
+          content: Text("Invalid phone number or password. Please try again."),
+          backgroundColor: DoctorCropColors.error,
+          behavior: SnackBarBehavior.floating,
         ),
       );
     }
   }
 
-  // Add this method
   Future<void> fetchUserStore(String phoneNumber) async {
-    final url = Uri.parse("http://192.168.50.36:8000/fetch-store");
+    try {
+      final url = Uri.parse("http://192.168.50.36:8000/fetch-store");
+      final response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"phone": phoneNumber}),
+      );
 
-    final response = await http.post(
-      url,
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode({"phone": phoneNumber}),
-    );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success'] == true && data['store'] != null) {
+          final products = (data['products'] as List)
+              .map((p) => StoreProduct.fromJson(p as Map<String, dynamic>))
+              .toList();
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      print("STORE RESPONSE: $data"); // remove after confirming it works
-
-      if (data['success'] == true && data['store'] != null) {
-        final products = (data['products'] as List)
-            .map((p) => StoreProduct.fromJson(p as Map<String, dynamic>))
-            .toList();
-
-        storeSessionNotifier.value = StoreSession.fromJson(
-          data['store'] as Map<String, dynamic>,
-          products,
-        );
-      } else {
-        storeSessionNotifier.value = null;
+          storeSessionNotifier.value = StoreSession.fromJson(
+            data['store'] as Map<String, dynamic>,
+            products,
+          );
+        } else {
+          storeSessionNotifier.value = null;
+        }
       }
-    }
+    } catch (_) {}
   }
 
   Future<void> fetchUsersExceptCurrentUser(String phoneNumber) async {
-    final url = Uri.parse("http://192.168.50.36:8000/fetch-all");
+    try {
+      final url = Uri.parse("http://192.168.50.36:8000/fetch-all");
+      final response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"phone": phoneNumber}),
+      );
 
-    final response = await http.post(
-      url,
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode({"phone": phoneNumber}),
-    );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final all_users = data['users'] as List;
+        final all_chats = data['chats'] as List;
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      final all_users = data['users'];
-      final all_chats = data['chats'];
+        fetchedUsers.value = all_users
+            .map((item) => UserInfo.fromJson(item as Map<String, dynamic>))
+            .toList();
 
-      print(all_users);
-      fetchedUsers.value = all_users
-          .map((item) => UserInfo.fromJson(item as Map<String, dynamic>))
-          .toList()
-          .cast<UserInfo>();
-
-      fetchChats.value = all_chats
-          .map((chat) => UserChats.fromJson(chat as Map<String, dynamic>))
-          .toList()
-          .cast<UserChats>();
-    }
+        fetchChats.value = all_chats
+            .map((chat) => UserChats.fromJson(chat as Map<String, dynamic>))
+            .toList();
+      }
+    } catch (_) {}
   }
 
   @override
@@ -138,205 +156,256 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xffF7F8F3),
+      backgroundColor: DoctorCropColors.background,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: DoctorCropColors.border, width: 0.8),
+            ),
+            child: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              size: 16,
+              color: DoctorCropColors.textPrimary,
+            ),
+          ),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: _cardDecoration(),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _stepTitle(
-                  icon: Icons.lock_outline,
-                  title: "Welcome back",
-                  subtitle: "Login using your phone number and password.",
-                ),
-
-                const SizedBox(height: 30),
-
-                _input(
-                  controller: phoneController,
-                  label: "Phone number",
-                  icon: Icons.phone_outlined,
-                  keyboardType: TextInputType.phone,
-                ),
-
-                const SizedBox(height: 16),
-
-                _input(
-                  controller: passwordController,
-                  label: "Password",
-                  icon: Icons.lock_outline,
-                  obscureText: true,
-                ),
-
-                const SizedBox(height: 10),
-
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () {},
-                    child: Text(
-                      "Forgot password?",
-                      style: TextStyle(
-                        color: Colors.orange.shade800,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-
-                const Spacer(),
-
-                SizedBox(
-                  width: double.infinity,
-                  height: 45,
-                  child: ElevatedButton(
-                    onPressed: login,
-                    style: _mainButtonStyle(),
-                    child: const Text(
-                      "Login",
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 14),
-
-                Center(
-                  child: TextButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              RegisterPage(homePage: widget.homePage),
-                        ),
-                      );
-                    },
-                    child: Text.rich(
-                      TextSpan(
-                        text: "Don’t have an account? ",
-                        style: TextStyle(
-                          color: Colors.grey.shade700,
-                          fontSize: 12,
-                        ),
-                        children: [
-                          TextSpan(
-                            text: "Register",
-                            style: TextStyle(
-                              color: Colors.greenAccent.shade700,
-                              fontWeight: FontWeight.bold,
-                            ),
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 440),
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: DoctorCropTheme.cardDecoration(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Brand Header
+                    Row(
+                      children: [
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: DoctorCropColors.primaryLight,
+                            borderRadius: BorderRadius.circular(14),
                           ),
-                        ],
+                          child: const Icon(
+                            Icons.eco_rounded,
+                            color: DoctorCropColors.primary,
+                            size: 26,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Welcome Back",
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w800,
+                                  color: DoctorCropColors.textPrimary,
+                                  letterSpacing: -0.3,
+                                ),
+                              ),
+                              SizedBox(height: 3),
+                              Text(
+                                "Doctor Crop Farmer Portal",
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  color: DoctorCropColors.textSecondary,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 28),
+
+                    // Phone input
+                    const Text(
+                      "Phone Number",
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        color: DoctorCropColors.textPrimary,
                       ),
                     ),
-                  ),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: phoneController,
+                      keyboardType: TextInputType.phone,
+                      style: const TextStyle(fontSize: 14, color: DoctorCropColors.textPrimary),
+                      decoration: const InputDecoration(
+                        hintText: "e.g. 0788 123 456",
+                        prefixIcon: Icon(
+                          Icons.phone_outlined,
+                          size: 19,
+                          color: DoctorCropColors.primary,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 18),
+
+                    // Password input
+                    const Text(
+                      "Password",
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        color: DoctorCropColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: passwordController,
+                      obscureText: _obscurePassword,
+                      style: const TextStyle(fontSize: 14, color: DoctorCropColors.textPrimary),
+                      decoration: InputDecoration(
+                        hintText: "Enter your password",
+                        prefixIcon: const Icon(
+                          Icons.lock_outline_rounded,
+                          size: 19,
+                          color: DoctorCropColors.primary,
+                        ),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
+                            size: 19,
+                            color: DoctorCropColors.textMuted,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _obscurePassword = !_obscurePassword;
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                "Password reset instructions have been forwarded to your registered phone number.",
+                              ),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        },
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: const Text(
+                          "Forgot password?",
+                          style: TextStyle(
+                            color: DoctorCropColors.accent,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 28),
+
+                    // Login Button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : login,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: DoctorCropColors.primary,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Text(
+                                "Sign In",
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // Register link
+                    Center(
+                      child: GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  RegisterPage(homePage: widget.homePage),
+                            ),
+                          );
+                        },
+                        child: RichText(
+                          text: const TextSpan(
+                            text: "Don’t have an account? ",
+                            style: TextStyle(
+                              color: DoctorCropColors.textSecondary,
+                              fontSize: 13,
+                            ),
+                            children: [
+                              TextSpan(
+                                text: "Register Now",
+                                style: TextStyle(
+                                  color: DoctorCropColors.primary,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
       ),
-    );
-  }
-
-  Widget _stepTitle({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-  }) {
-    return Row(
-      children: [
-        Container(
-          height: 42,
-          width: 42,
-          decoration: BoxDecoration(
-            color: Colors.orange.shade100,
-            borderRadius: BorderRadius.circular(15),
-          ),
-          child: Icon(icon, color: Colors.orange.shade800),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                subtitle,
-                style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _input({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    bool obscureText = false,
-    TextInputType keyboardType = TextInputType.text,
-  }) {
-    return TextField(
-      controller: controller,
-      obscureText: obscureText,
-      keyboardType: keyboardType,
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: const TextStyle(fontSize: 12),
-        prefixIcon: Icon(icon, color: Colors.green, size: 15),
-        filled: true,
-        fillColor: const Color(0xffF7F8F3),
-        contentPadding: const EdgeInsets.symmetric(vertical: 5, horizontal: 14),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(
-            color: Colors.greenAccent.shade700,
-            width: 0.5,
-          ),
-        ),
-      ),
-    );
-  }
-
-  BoxDecoration _cardDecoration() {
-    return BoxDecoration(
-      color: Colors.transparent,
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.06),
-          blurRadius: 18,
-          offset: const Offset(0, 8),
-        ),
-      ],
-    );
-  }
-
-  ButtonStyle _mainButtonStyle() {
-    return ElevatedButton.styleFrom(
-      backgroundColor: Colors.greenAccent.shade700,
-      foregroundColor: Colors.white,
-      elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
     );
   }
 }
