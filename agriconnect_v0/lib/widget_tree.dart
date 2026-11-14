@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:agriconnect_v0/connect_page.dart';
 import 'package:agriconnect_v0/detect_disease.dart';
 import 'package:agriconnect_v0/genomePage.dart';
@@ -7,7 +6,9 @@ import 'package:agriconnect_v0/home_marketplace.dart';
 import 'package:agriconnect_v0/loginpage.dart';
 import 'package:agriconnect_v0/forecast_page.dart';
 import 'package:agriconnect_v0/notifier.dart';
+import 'package:agriconnect_v0/seasonal_page.dart';
 import 'package:agriconnect_v0/storepages.dart';
+import 'package:agriconnect_v0/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
@@ -32,26 +33,36 @@ class _WidgetTreeState extends State<WidgetTree> {
     "Marketplace",
     "Detect Disease",
     "Connect",
-    "News",
+    "Forecast & News",
+  ];
+
+  final List<String> _subtitles = const [
+    "Verified agro inputs & tools",
+    "AI leaf disease diagnosis",
+    "Agronomists & farmers near you",
+    "Real-time Rwandan weather & alerts",
   ];
 
   Future<void> fetchAllProducts() async {
-    final url = Uri.parse("http://192.168.50.36:8000/fetch-products");
-    final response = await http.get(url);
+    try {
+      final url = Uri.parse("http://192.168.50.36:8000/fetch-products");
+      final response = await http.get(url);
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      if (data['success'] == true) {
-        fetchedProducts.value = (data['content'] as List)
-            .map((item) => Product.fromJson(item as Map<String, dynamic>))
-            .toList();
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success'] == true) {
+          fetchedProducts.value = (data['content'] as List)
+              .map((item) => Product.fromJson(item as Map<String, dynamic>))
+              .toList();
+        }
       }
+    } catch (e) {
+      // Retain gracefully if backend is offline during preview
     }
   }
 
   void _openDrawerPage(String title, IconData icon, String description) {
     Navigator.pop(context);
-
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -69,146 +80,218 @@ class _WidgetTreeState extends State<WidgetTree> {
         valueListenable: sessionNotifier,
         builder: (context, user, _) {
           final bool isLoggedIn = user != null;
-          return SingleChildScrollView(
-            scrollDirection: Axis.vertical,
-            child: Column(
-              children: [
-                // ── Header ──────────────────────────────────────────────────
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.fromLTRB(20, 54, 20, 20),
-                  decoration: BoxDecoration(
-                    border: Border(
-                      bottom: BorderSide(color: Colors.grey.shade100, width: 1),
-                    ),
+
+          return Column(
+            children: [
+              // ── Header Profile Area ──────────────────────────────────────
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(20, 52, 20, 20),
+                decoration: const BoxDecoration(
+                  color: DoctorCropColors.surface,
+                  border: Border(
+                    bottom: BorderSide(color: DoctorCropColors.border, width: 0.9),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 22,
-                            backgroundColor: const Color(
-                              0xFFF97316,
-                            ).withOpacity(0.10),
-                            child: const Icon(
-                              Icons.person_outline_rounded,
-                              size: 22,
-                              color: Color(0xFFF97316),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: isLoggedIn
+                                ? DoctorCropColors.primaryLight
+                                : DoctorCropColors.accentLight,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: isLoggedIn
+                                  ? DoctorCropColors.primary.withOpacity(0.3)
+                                  : DoctorCropColors.accent.withOpacity(0.3),
+                              width: 1.5,
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  isLoggedIn ? user.fullName : "Guest Farmer",
-                                  style: const TextStyle(
-                                    color: Color(0xFF111111),
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: -0.2,
-                                  ),
+                          child: Icon(
+                            isLoggedIn
+                                ? Icons.person_rounded
+                                : Icons.person_outline_rounded,
+                            size: 24,
+                            color: isLoggedIn
+                                ? DoctorCropColors.primary
+                                : DoctorCropColors.accent,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                isLoggedIn ? user.fullName : "Guest Farmer",
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: DoctorCropColors.textPrimary,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: -0.2,
                                 ),
-                                const SizedBox(height: 2),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                isLoggedIn
+                                    ? user.phoneNumber
+                                    : "Sign in to unlock all features",
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: DoctorCropColors.textMuted,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (isLoggedIn)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: DoctorCropColors.primaryLight,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.verified_rounded,
+                                  size: 11,
+                                  color: DoctorCropColors.primary,
+                                ),
+                                SizedBox(width: 3),
                                 Text(
-                                  isLoggedIn
-                                      ? user.phoneNumber
-                                      : "Not signed in",
+                                  "Verified",
                                   style: TextStyle(
-                                    color: Colors.grey.shade500,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w400,
+                                    color: DoctorCropColors.primary,
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w700,
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                          if (isLoggedIn)
-                            Text(
-                              "Verified",
-                              style: TextStyle(
-                                color: const Color(0xFF40B37A),
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
+                      ],
+                    ),
+
+                    // Guest Actions
+                    if (!isLoggedIn) ...[
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: () {
+                                Navigator.pop(context);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        LoginPage(homePage: const WidgetTree()),
+                                  ),
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: DoctorCropColors.primary,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                              child: const Text(
+                                "Sign in",
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                             ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () {
+                                Navigator.pop(context);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        const BasicPage(
+                                          icon: Icons.person_add_outlined,
+                                          title: "Create Account",
+                                          description: "Sign in or register from the sign in page to set up your farmer profile.",
+                                        ),
+                                  ),
+                                );
+                              },
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: DoctorCropColors.textPrimary,
+                                side: const BorderSide(
+                                  color: DoctorCropColors.border,
+                                ),
+                                padding: const EdgeInsets.symmetric(vertical: 10),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                              child: const Text(
+                                "Register",
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
                         ],
                       ),
-
-                      // ── Guest buttons ──
-                      if (!isLoggedIn) ...[
-                        const SizedBox(height: 14),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () {
-                                  Navigator.pop(context);
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) =>
-                                          LoginPage(homePage: WidgetTree()),
-                                    ),
-                                  );
-                                },
-                                child: Container(
-                                  height: 36,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFF97316),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: const Text(
-                                    "Sign in",
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () {
-                                  Navigator.pop(context);
-                                },
-                                child: Container(
-                                  height: 36,
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey.shade100,
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: Text(
-                                    "Register",
-                                    style: TextStyle(
-                                      color: Colors.grey.shade700,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
                     ],
-                  ),
+                  ],
                 ),
+              ),
 
-                // ── Menu ────────────────────────────────────────────────────
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              // ── Scrollable Menu List ─────────────────────────────────────
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
                   children: [
-                    // ── Light section (Farm Tools + Shopping) ──
+                    _sectionLabel("Farm & AI Services"),
+                    _menuItem(
+                      icon: Icons.document_scanner_rounded,
+                      label: "Disease Scanner",
+                      accentColor: DoctorCropColors.primary,
+                      onTap: () {
+                        Navigator.pop(context);
+                        setState(() => _currentIndex = 1);
+                      },
+                    ),
+                    _menuItem(
+                      icon: Icons.auto_awesome_rounded,
+                      label: "Genome AI Assistant",
+                      accentColor: DoctorCropColors.info,
+                      badge: "AI",
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const GenomeAIPage()),
+                        );
+                      },
+                    ),
                     _menuItem(
                       icon: Icons.shopping_bag_outlined,
                       label: "My Orders",
@@ -216,27 +299,26 @@ class _WidgetTreeState extends State<WidgetTree> {
                       onTap: () => _openDrawerPage(
                         "My Orders",
                         Icons.shopping_bag_outlined,
-                        "Track medicine orders, delivery status, and purchase history.",
+                        "Track agricultural supplies, delivery updates, and store receipts.",
                       ),
                     ),
                     _menuItem(
-                      icon: Icons.auto_awesome_outlined,
-                      label: "Genome AI",
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => GenomeAIPage()),
-                      ),
+                      icon: Icons.calendar_month_outlined,
+                      label: "Seasonal Records",
+                      badge: "New",
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const SeasonalPage(),
+                          ),
+                        );
+                      },
                     ),
-                    _menuItem(
-                      icon: Icons.document_scanner_outlined,
-                      label: "Scanned Diseases",
-                      onTap: () => _openDrawerPage(
-                        "Disease Scanner",
-                        Icons.document_scanner_outlined,
-                        "Use your camera to detect crop diseases instantly using AI.",
-                      ),
-                    ),
-                    _sectionLabel("My Store", dark: false),
+
+                    const Divider(height: 20),
+                    _sectionLabel("My Agro Store"),
                     ValueListenableBuilder<StoreSession?>(
                       valueListenable: storeSessionNotifier,
                       builder: (context, store, _) {
@@ -244,9 +326,8 @@ class _WidgetTreeState extends State<WidgetTree> {
 
                         return Column(
                           children: [
-                            // Store Home
                             _gatedMenuItem(
-                              icon: Icons.home_outlined,
+                              icon: Icons.storefront_outlined,
                               label: "Store Home",
                               active: hasStore,
                               onTap: hasStore
@@ -255,16 +336,15 @@ class _WidgetTreeState extends State<WidgetTree> {
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
-                                          builder: (_) => const StoreHomePage(),
+                                          builder: (_) =>
+                                              const StoreHomePage(),
                                         ),
                                       );
                                     }
                                   : null,
                             ),
-
-                            // Store Recording
                             _gatedMenuItem(
-                              icon: Icons.currency_exchange,
+                              icon: Icons.receipt_long_outlined,
                               label: "Store Recording",
                               active: hasStore,
                               onTap: hasStore
@@ -280,10 +360,8 @@ class _WidgetTreeState extends State<WidgetTree> {
                                     }
                                   : null,
                             ),
-
-                            // Store Transactions
                             _gatedMenuItem(
-                              icon: Icons.document_scanner,
+                              icon: Icons.swap_horiz_rounded,
                               label: "Store Transactions",
                               active: hasStore,
                               onTap: hasStore
@@ -299,159 +377,180 @@ class _WidgetTreeState extends State<WidgetTree> {
                                     }
                                   : null,
                             ),
+                            _menuItem(
+                              icon: Icons.info_outline_rounded,
+                              label: "Store Information",
+                              onTap: () {
+                                Navigator.pop(context);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const StoreInfoPage(),
+                                  ),
+                                );
+                              },
+                            ),
                           ],
                         );
                       },
                     ),
+
+                    const Divider(height: 20),
+                    _sectionLabel("Account & Support"),
                     _menuItem(
-                      icon: Icons.info_outline,
-                      label: "Store Info",
-                      onTap: () {
-                        Navigator.pop(context);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const StoreInfoPage(),
-                          ),
-                        );
-                      },
-                    ),
-
-                    Container(
-                      width: double.infinity,
-                      height: 400,
-                      decoration: BoxDecoration(
-                        color: const Color.fromARGB(255, 32, 32, 32),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _sectionLabel("Account", dark: true),
-                          _darkMenuItem(
-                            icon: Icons.notifications_outlined,
-                            label: "Notifications",
-                            badge: isLoggedIn ? "2" : null,
-                            onTap: () => _openDrawerPage(
-                              "Notifications",
-                              Icons.notifications_outlined,
-                              "Disease alerts, order updates, chat messages, and weather warnings.",
-                            ),
-                          ),
-                          _darkMenuItem(
-                            icon: Icons.settings_outlined,
-                            label: "Settings",
-                            onTap: () => _openDrawerPage(
-                              "Settings",
-                              Icons.settings_outlined,
-                              "Manage language, notifications, privacy, and app preferences.",
-                            ),
-                          ),
-                          _darkMenuItem(
-                            icon: Icons.support_agent_outlined,
-                            label: "Support",
-                            onTap: () => _openDrawerPage(
-                              "Support",
-                              Icons.support_agent_outlined,
-                              "Contact support for help with orders, disease scans, and app issues.",
-                            ),
-                          ),
-                          _darkMenuItem(
-                            icon: Icons.info_outline_rounded,
-                            label: "About",
-                            onTap: () => _openDrawerPage(
-                              "About",
-                              Icons.info_outline_rounded,
-                              "This app helps farmers detect crop diseases, buy medicines, access advice, and connect with others.",
-                            ),
-                          ),
-
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
-                            child: Divider(
-                              color: Colors.white.withOpacity(0.08),
-                              height: 1,
-                              thickness: 0.5,
-                            ),
-                          ),
-
-                          _darkMenuItem(
-                            icon: isLoggedIn
-                                ? Icons.logout_rounded
-                                : Icons.swap_horiz_rounded,
-                            label: isLoggedIn ? "Sign out" : "Switch account",
-                            isDestructive: true,
-                            onTap: () {
-                              Navigator.pop(context);
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      LoginPage(homePage: WidgetTree()),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
+                      icon: Icons.notifications_none_rounded,
+                      label: "Notifications",
+                      badge: isLoggedIn ? "2" : null,
+                      onTap: () => _openDrawerPage(
+                        "Notifications",
+                        Icons.notifications_none_rounded,
+                        "Crop disease warnings, store updates, community replies, and weather alerts.",
                       ),
                     ),
+                    _menuItem(
+                      icon: Icons.tune_rounded,
+                      label: "Settings",
+                      onTap: () => _openDrawerPage(
+                        "Settings",
+                        Icons.tune_rounded,
+                        "Manage language (Kinyarwanda/English), alert thresholds, and farm preferences.",
+                      ),
+                    ),
+                    _menuItem(
+                      icon: Icons.support_agent_rounded,
+                      label: "Help & Support",
+                      onTap: () => _openDrawerPage(
+                        "Support",
+                        Icons.support_agent_rounded,
+                        "Need assistance with diagnostic accuracy, deliveries, or farm consulting? Our agronomists are available.",
+                      ),
+                    ),
+                    _menuItem(
+                      icon: Icons.info_outline_rounded,
+                      label: "About Doctor Crop",
+                      onTap: () => _openDrawerPage(
+                        "About Doctor Crop",
+                        Icons.eco_rounded,
+                        "Doctor Crop connects Rwandan farmers with instant disease diagnostics, certified agro-veterinary shops, and verified agronomists.",
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: isLoggedIn
+                              ? DoctorCropColors.accentLight.withOpacity(0.4)
+                              : DoctorCropColors.surfaceMuted,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: _menuItem(
+                          icon: isLoggedIn
+                              ? Icons.logout_rounded
+                              : Icons.login_rounded,
+                          label: isLoggedIn ? "Sign out" : "Sign in to Account",
+                          accentColor: isLoggedIn
+                              ? DoctorCropColors.accentDark
+                              : DoctorCropColors.primary,
+                          onTap: () {
+                            Navigator.pop(context);
+                            if (isLoggedIn) {
+                              sessionNotifier.value = null;
+                              storeSessionNotifier.value = null;
+                            }
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    LoginPage(homePage: const WidgetTree()),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
                   ],
                 ),
-              ],
-            ),
+              ),
+
+              // Drawer Footer Version
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                alignment: Alignment.center,
+                child: const Text(
+                  "Doctor Crop v1.0.0 · Production Ready",
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: DoctorCropColors.textMuted,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
           );
         },
       ),
     );
   }
 
-  // ── Section label ─────────────────────────────────────────────────────────────
-  Widget _sectionLabel(String label, {bool dark = false}) {
+  Widget _sectionLabel(String label) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 4),
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 6),
       child: Text(
         label.toUpperCase(),
-        style: TextStyle(
-          color: dark ? Colors.white.withOpacity(0.30) : Colors.grey.shade400,
-          fontSize: 10.5,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 1.1,
+        style: const TextStyle(
+          color: DoctorCropColors.textMuted,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.8,
         ),
       ),
     );
   }
 
-  // ── Light menu item ───────────────────────────────────────────────────────────
   Widget _menuItem({
     required IconData icon,
     required String label,
     required VoidCallback onTap,
+    Color? accentColor,
     String? badge,
   }) {
+    final color = accentColor ?? DoctorCropColors.textSecondary;
     return InkWell(
       onTap: onTap,
-      splashColor: Colors.grey.shade100,
-      highlightColor: Colors.grey.shade50,
+      splashColor: DoctorCropColors.primaryLight.withOpacity(0.5),
+      highlightColor: DoctorCropColors.primaryLight.withOpacity(0.2),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
         child: Row(
           children: [
-            Icon(icon, size: 19, color: Colors.grey.shade600),
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: (accentColor ?? DoctorCropColors.primary).withOpacity(0.08),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, size: 18, color: color),
+            ),
             const SizedBox(width: 14),
             Expanded(
               child: Text(
                 label,
                 style: const TextStyle(
-                  color: Color(0xFF1A1A1A),
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w400,
+                  color: DoctorCropColors.textPrimary,
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),
             if (badge != null)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF97316),
+                  color: DoctorCropColors.accent,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
@@ -459,71 +558,87 @@ class _WidgetTreeState extends State<WidgetTree> {
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 10.5,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               )
             else
-              Icon(Icons.chevron_right, size: 17, color: Colors.grey.shade300),
+              const Icon(
+                Icons.chevron_right_rounded,
+                size: 18,
+                color: DoctorCropColors.textMuted,
+              ),
           ],
         ),
       ),
     );
   }
 
-  // ── Dark menu item ────────────────────────────────────────────────────────────
-  Widget _darkMenuItem({
+  Widget _gatedMenuItem({
     required IconData icon,
     required String label,
-    required VoidCallback onTap,
-    String? badge,
-    bool isDestructive = false,
+    required bool active,
+    VoidCallback? onTap,
   }) {
-    final Color fg = isDestructive
-        ? Colors.orange.shade400
-        : Colors.white.withOpacity(0.80);
-
     return InkWell(
-      onTap: onTap,
-      splashColor: Colors.white.withOpacity(0.04),
-      highlightColor: Colors.white.withOpacity(0.03),
+      onTap: active ? onTap : null,
+      splashColor: active ? DoctorCropColors.primaryLight : Colors.transparent,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
         child: Row(
           children: [
-            Icon(icon, size: 19, color: fg.withOpacity(0.70)),
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: active
+                    ? DoctorCropColors.primary.withOpacity(0.08)
+                    : Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                icon,
+                size: 18,
+                color: active
+                    ? DoctorCropColors.primary
+                    : Colors.grey.shade400,
+              ),
+            ),
             const SizedBox(width: 14),
             Expanded(
               child: Text(
                 label,
                 style: TextStyle(
-                  color: fg,
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w400,
+                  color: active
+                      ? DoctorCropColors.textPrimary
+                      : Colors.grey.shade400,
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),
-            if (badge != null)
+            if (!active)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF97316),
-                  borderRadius: BorderRadius.circular(10),
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey.shade300, width: 0.8),
                 ),
-                child: Text(
-                  badge,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 10.5,
+                child: const Text(
+                  "Not connected",
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontSize: 10,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               )
             else
-              Icon(
-                Icons.chevron_right,
-                size: 17,
-                color: Colors.white.withOpacity(0.15),
+              const Icon(
+                Icons.chevron_right_rounded,
+                size: 18,
+                color: DoctorCropColors.textMuted,
               ),
           ],
         ),
@@ -541,55 +656,64 @@ class _WidgetTreeState extends State<WidgetTree> {
   Widget build(BuildContext context) {
     return Scaffold(
       drawer: _buildDrawer(),
-
       appBar: AppBar(
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         titleSpacing: 0,
-        title: Padding(
-          padding: const EdgeInsets.only(left: 4),
-          child: Text(
-            _titles[_currentIndex],
-            style: const TextStyle(
-              color: Color(0xFF111111),
-              fontWeight: FontWeight.w700,
-              fontSize: 20,
-              letterSpacing: -0.3,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              _titles[_currentIndex],
+              style: const TextStyle(
+                color: DoctorCropColors.textPrimary,
+                fontWeight: FontWeight.w800,
+                fontSize: 19,
+                letterSpacing: -0.3,
+              ),
             ),
-          ),
+            Text(
+              _subtitles[_currentIndex],
+              style: const TextStyle(
+                color: DoctorCropColors.textMuted,
+                fontWeight: FontWeight.w500,
+                fontSize: 11,
+              ),
+            ),
+          ],
         ),
         leading: Builder(
           builder: (context) => IconButton(
             icon: Container(
-              width: 36,
-              height: 36,
+              width: 38,
+              height: 38,
               decoration: BoxDecoration(
-                color: const Color(0xFFF5F5F3),
+                color: DoctorCropColors.surfaceMuted,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFE5E5E0), width: 0.8),
+                border: Border.all(color: DoctorCropColors.border, width: 0.9),
               ),
               child: const Icon(
                 Icons.menu_rounded,
-                color: Colors.orange,
-                size: 18,
+                color: DoctorCropColors.primary,
+                size: 20,
               ),
             ),
             onPressed: () => Scaffold.of(context).openDrawer(),
           ),
         ),
         actions: [
-          // ── Notifications ────────────────────────────────────────────────
+          // ── Notifications ───────────────────────────────────────────
           GestureDetector(
             onTap: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (_) => const BasicPage(
-                    icon: Icons.notifications_outlined,
-                    title: "Notifications",
+                    icon: Icons.notifications_active_outlined,
+                    title: "Farm Alerts & Notifications",
                     description:
-                        "Disease alerts, order updates, weather warnings, and chat notifications.",
+                        "Stay notified with instant crop disease detection reports, marketplace updates, agronomist advice, and weather alerts.",
                   ),
                 ),
               );
@@ -599,37 +723,28 @@ class _WidgetTreeState extends State<WidgetTree> {
               height: 40,
               margin: const EdgeInsets.only(right: 8),
               decoration: BoxDecoration(
-                color: const Color(0xFFF5F5F3),
+                color: DoctorCropColors.surfaceMuted,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFE5E5E0), width: 0.8),
+                border: Border.all(color: DoctorCropColors.border, width: 0.9),
               ),
               child: Stack(
                 clipBehavior: Clip.none,
                 alignment: Alignment.center,
                 children: [
                   const Icon(
-                    Icons.notifications_outlined,
-                    color: Color(0xFF555555),
+                    Icons.notifications_none_rounded,
+                    color: DoctorCropColors.textSecondary,
                     size: 20,
                   ),
                   Positioned(
-                    top: 5,
-                    right: 5,
+                    top: 6,
+                    right: 6,
                     child: Container(
-                      width: 16,
-                      height: 16,
+                      width: 8,
+                      height: 8,
                       decoration: const BoxDecoration(
-                        color: Color(0xFFF97316),
+                        color: DoctorCropColors.accent,
                         shape: BoxShape.circle,
-                      ),
-                      alignment: Alignment.center,
-                      child: const Text(
-                        "6",
-                        style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
                       ),
                     ),
                   ),
@@ -638,17 +753,17 @@ class _WidgetTreeState extends State<WidgetTree> {
             ),
           ),
 
-          // ── Cart ─────────────────────────────────────────────────────────
+          // ── Quick Profile / Cart Action ─────────────────────────────
           GestureDetector(
             onTap: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (_) => const BasicPage(
-                    icon: Icons.person,
-                    title: "Profile",
+                    icon: Icons.account_circle_outlined,
+                    title: "Farmer Profile",
                     description:
-                        "Manage your farmer profile, location, crops, and account details.",
+                        "View and manage your registered farmer credentials, designated farm location in Rwanda, active crop varieties, and orders.",
                   ),
                 ),
               );
@@ -658,14 +773,14 @@ class _WidgetTreeState extends State<WidgetTree> {
               height: 40,
               margin: const EdgeInsets.only(right: 14),
               decoration: BoxDecoration(
-                color: const Color(0xFFF5F5F3),
+                color: DoctorCropColors.surfaceMuted,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFE5E5E0), width: 0.8),
+                border: Border.all(color: DoctorCropColors.border, width: 0.9),
               ),
               alignment: Alignment.center,
               child: const Icon(
-                Icons.add_shopping_cart_outlined,
-                color: Color(0xFF555555),
+                Icons.person_outline_rounded,
+                color: DoctorCropColors.textSecondary,
                 size: 20,
               ),
             ),
@@ -673,121 +788,87 @@ class _WidgetTreeState extends State<WidgetTree> {
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
-          child: Container(height: 0.8, color: const Color(0xFFEEEEEA)),
+          child: Container(height: 0.9, color: DoctorCropColors.border),
         ),
       ),
 
       body: IndexedStack(index: _currentIndex, children: _pages),
 
+      // ── Clean Elevated Modern Bottom Navigation ───────────────────────
       bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.black54,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.orange.withOpacity(0.09),
-              blurRadius: 10,
-              offset: const Offset(0, -4),
-            ),
-          ],
-        ),
-        child: BottomNavigationBar(
-          currentIndex: _currentIndex,
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.black54,
-          selectedItemColor: Colors.greenAccent.shade200,
-
-          unselectedItemColor: Colors.grey,
-          onTap: (index) {
-            setState(() {
-              _currentIndex = index;
-            });
-          },
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.store_outlined),
-              activeIcon: Icon(Icons.storefront_outlined),
-              label: "Market",
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.camera_alt_outlined),
-              activeIcon: Icon(Icons.camera_alt),
-              label: "Detect",
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.people_outline),
-              activeIcon: Icon(Icons.people),
-              label: "Connect",
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.cloud_outlined),
-              activeIcon: Icon(Icons.article),
-              label: "Forecast",
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _gatedMenuItem({
-    required IconData icon,
-    required String label,
-    required bool active,
-    VoidCallback? onTap,
-  }) {
-    final Color iconColor = active
-        ? Colors.grey.shade600
-        : Colors.grey.shade300;
-    final Color labelColor = active
-        ? const Color(0xFF1A1A1A)
-        : Colors.grey.shade300;
-
-    return InkWell(
-      onTap: active ? onTap : null,
-      splashColor: active ? Colors.grey.shade100 : Colors.transparent,
-      highlightColor: active ? Colors.grey.shade50 : Colors.transparent,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        child: Row(
-          children: [
-            Icon(icon, size: 19, color: iconColor),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Text(
-                label,
-                style: TextStyle(
-                  color: labelColor,
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w400,
+        decoration: DoctorCropTheme.bottomNavDecoration(),
+        child: SafeArea(
+          top: false,
+          child: BottomNavigationBar(
+            currentIndex: _currentIndex,
+            type: BottomNavigationBarType.fixed,
+            backgroundColor: Colors.white,
+            selectedItemColor: DoctorCropColors.primary,
+            unselectedItemColor: DoctorCropColors.textMuted,
+            elevation: 0,
+            selectedFontSize: 11.5,
+            unselectedFontSize: 11,
+            selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w700),
+            unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500),
+            onTap: (index) {
+              setState(() {
+                _currentIndex = index;
+              });
+            },
+            items: const [
+              BottomNavigationBarItem(
+                icon: Padding(
+                  padding: EdgeInsets.only(bottom: 3),
+                  child: Icon(Icons.storefront_outlined),
                 ),
+                activeIcon: Padding(
+                  padding: EdgeInsets.only(bottom: 3),
+                  child: Icon(Icons.storefront_rounded),
+                ),
+                label: "Market",
               ),
-            ),
-            if (!active)
-              // Small lock badge when store not connected
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(8),
+              BottomNavigationBarItem(
+                icon: Padding(
+                  padding: EdgeInsets.only(bottom: 3),
+                  child: Icon(Icons.document_scanner_outlined),
                 ),
-                child: Text(
-                  "Connect store",
-                  style: TextStyle(
-                    color: Colors.grey.shade400,
-                    fontSize: 9.5,
-                    fontWeight: FontWeight.w600,
-                  ),
+                activeIcon: Padding(
+                  padding: EdgeInsets.only(bottom: 3),
+                  child: Icon(Icons.document_scanner_rounded),
                 ),
-              )
-            else
-              Icon(Icons.chevron_right, size: 17, color: Colors.grey.shade300),
-          ],
+                label: "Detect",
+              ),
+              BottomNavigationBarItem(
+                icon: Padding(
+                  padding: EdgeInsets.only(bottom: 3),
+                  child: Icon(Icons.forum_outlined),
+                ),
+                activeIcon: Padding(
+                  padding: EdgeInsets.only(bottom: 3),
+                  child: Icon(Icons.forum_rounded),
+                ),
+                label: "Connect",
+              ),
+              BottomNavigationBarItem(
+                icon: Padding(
+                  padding: EdgeInsets.only(bottom: 3),
+                  child: Icon(Icons.cloud_outlined),
+                ),
+                activeIcon: Padding(
+                  padding: EdgeInsets.only(bottom: 3),
+                  child: Icon(Icons.cloud_rounded),
+                ),
+                label: "Forecast",
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
+/// Standalone Full-Featured Detail / Placeholder Screen with Back Button & Helpful Actions
 class BasicPage extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -803,29 +884,104 @@ class BasicPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 72, color: Colors.green),
-              const SizedBox(height: 20),
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
+      backgroundColor: DoctorCropColors.background,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        leading: IconButton(
+          icon: Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: DoctorCropColors.surfaceMuted,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: DoctorCropColors.border, width: 0.8),
+            ),
+            child: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              size: 16,
+              color: DoctorCropColors.textPrimary,
+            ),
+          ),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          title,
+          style: const TextStyle(
+            color: DoctorCropColors.textPrimary,
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(height: 0.9, color: DoctorCropColors.border),
+        ),
+      ),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 90,
+                  height: 90,
+                  decoration: BoxDecoration(
+                    color: DoctorCropColors.primaryLight,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: DoctorCropColors.primary.withOpacity(0.12),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    icon,
+                    size: 44,
+                    color: DoctorCropColors.primary,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                description,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 15, color: Colors.grey),
-              ),
-            ],
+                const SizedBox(height: 24),
+                Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: DoctorCropColors.textPrimary,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: DoctorCropTheme.cardDecoration(),
+                  child: Text(
+                    description,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: DoctorCropColors.textSecondary,
+                      height: 1.5,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 32),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text("Return to Previous Screen"),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

@@ -1,6 +1,7 @@
 // ignore_for_file: curly_braces_in_flow_control_structures
 
 import 'dart:convert';
+import 'package:agriconnect_v0/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
@@ -14,10 +15,6 @@ class GenomeAIPage extends StatefulWidget {
 }
 
 class _GenomeAIPageState extends State<GenomeAIPage> {
-  static const Color _ink = Color(0xFF111111);
-  static const Color _surface = Color(0xFFF5F5F3);
-  static const Color _border = Color(0xFFEEEEEA);
-
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollCtrl = ScrollController();
 
@@ -30,23 +27,23 @@ class _GenomeAIPageState extends State<GenomeAIPage> {
   final List<Map<String, dynamic>> _suggestions = [
     {
       "icon": Icons.coronavirus_outlined,
-      "color": Color(0xFFEA580C),
-      "text": "How do I treat cassava brown streak disease?",
+      "color": DoctorCropColors.accent,
+      "text": "How do I identify and treat Cassava Brown Streak Disease?",
     },
     {
       "icon": Icons.wb_sunny_outlined,
-      "color": Color(0xFFF97316),
-      "text": "What crops should I plant in the rainy season?",
+      "color": DoctorCropColors.accentDark,
+      "text": "What crops are most suitable for planting during Season B?",
     },
     {
       "icon": Icons.bug_report_outlined,
-      "color": Color(0xFF40B37A),
-      "text": "How do I control aphids on my tomatoes?",
+      "color": DoctorCropColors.primary,
+      "text": "How can I control aphids and whiteflies on my tomatoes?",
     },
     {
       "icon": Icons.science_outlined,
-      "color": Color(0xFF2563EB),
-      "text": "What fertilizer is best for potato farming?",
+      "color": DoctorCropColors.info,
+      "text": "What fertilizer ratio is recommended for Irish Potato farming?",
     },
   ];
 
@@ -56,18 +53,21 @@ class _GenomeAIPageState extends State<GenomeAIPage> {
     _connect();
   }
 
-  // ── WebSocket lifecycle ──────────────────────────────────────────────
   void _connect() {
-    _channel = WebSocketChannel.connect(Uri.parse(_kWsUrl));
-    _channel.stream.listen(
-      _onData,
-      onError: (_) => _onConnectionError(),
-      onDone: () => _reconnect(),
-    );
+    try {
+      _channel = WebSocketChannel.connect(Uri.parse(_kWsUrl));
+      _channel.stream.listen(
+        _onData,
+        onError: (_) => _onConnectionError(),
+        onDone: () => _reconnect(),
+      );
+    } catch (_) {}
   }
 
   void _reconnect() {
-    Future.delayed(const Duration(seconds: 2), _connect);
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) _connect();
+    });
   }
 
   void _onConnectionError() {
@@ -76,7 +76,7 @@ class _GenomeAIPageState extends State<GenomeAIPage> {
       _messages.add({
         "role": "assistant",
         "text":
-            "⚠️ Lost connection. Make sure the server is running on $_kWsUrl",
+            "⚠️ Genome AI service connection is momentarily unavailable. Reconnecting to local agricultural node...",
       });
       _streamBuffer = "";
       _isLoading = false;
@@ -87,7 +87,6 @@ class _GenomeAIPageState extends State<GenomeAIPage> {
     final text = data as String;
 
     if (text == "[DONE]") {
-      // Commit streamed reply to history
       setState(() {
         if (_streamBuffer.isNotEmpty) {
           _messages.add({"role": "assistant", "text": _streamBuffer});
@@ -101,7 +100,6 @@ class _GenomeAIPageState extends State<GenomeAIPage> {
     _scrollToBottom();
   }
 
-  // ── Send ─────────────────────────────────────────────────────────────
   void _sendMessage(String text) {
     final trimmed = text.trim();
     if (trimmed.isEmpty || _isLoading) return;
@@ -114,11 +112,14 @@ class _GenomeAIPageState extends State<GenomeAIPage> {
     _controller.clear();
     _scrollToBottom();
 
-    // Send full conversation history as JSON array
     final payload = jsonEncode(
       _messages.map((m) => {"role": m["role"], "content": m["text"]}).toList(),
     );
-    _channel.sink.add(payload);
+    try {
+      _channel.sink.add(payload);
+    } catch (e) {
+      _onConnectionError();
+    }
   }
 
   void _scrollToBottom() {
@@ -135,13 +136,14 @@ class _GenomeAIPageState extends State<GenomeAIPage> {
 
   @override
   void dispose() {
-    _channel.sink.close();
+    try {
+      _channel.sink.close();
+    } catch (_) {}
     _controller.dispose();
     _scrollCtrl.dispose();
     super.dispose();
   }
 
-  // ─────────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     final bool showStreaming = _isLoading && _streamBuffer.isNotEmpty;
@@ -150,7 +152,7 @@ class _GenomeAIPageState extends State<GenomeAIPage> {
         _messages.length + (showStreaming ? 1 : 0) + (showDots ? 1 : 0);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: DoctorCropColors.background,
       appBar: _buildAppBar(),
       body: SafeArea(
         child: Column(
@@ -160,7 +162,7 @@ class _GenomeAIPageState extends State<GenomeAIPage> {
                   ? _buildEmptyState()
                   : ListView.builder(
                       controller: _scrollCtrl,
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
                       itemCount: itemCount,
                       itemBuilder: (ctx, i) {
                         if (i < _messages.length)
@@ -181,147 +183,170 @@ class _GenomeAIPageState extends State<GenomeAIPage> {
     );
   }
 
-  // ── AppBar ───────────────────────────────────────────────────────────
   PreferredSizeWidget _buildAppBar() => AppBar(
     backgroundColor: Colors.white,
     surfaceTintColor: Colors.transparent,
     elevation: 0,
-    leading: GestureDetector(
-      onTap: () => Navigator.pop(context),
-      child: Container(
-        margin: const EdgeInsets.all(8),
+    leading: IconButton(
+      onPressed: () => Navigator.pop(context),
+      icon: Container(
+        width: 36,
+        height: 36,
         decoration: BoxDecoration(
-          color: _surface,
+          color: DoctorCropColors.surfaceMuted,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: _border, width: 0.8),
+          border: Border.all(color: DoctorCropColors.border, width: 0.8),
         ),
         child: const Icon(
           Icons.arrow_back_ios_new_rounded,
-          color: Colors.orange,
+          color: DoctorCropColors.textPrimary,
           size: 16,
         ),
       ),
     ),
+    title: Row(
+      children: [
+        Container(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            color: DoctorCropColors.primaryLight,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: const Icon(
+            Icons.auto_awesome_rounded,
+            color: DoctorCropColors.primary,
+            size: 18,
+          ),
+        ),
+        const SizedBox(width: 10),
+        const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "Genome AI Assistant",
+              style: TextStyle(
+                color: DoctorCropColors.textPrimary,
+                fontSize: 15.5,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.2,
+              ),
+            ),
+            Text(
+              "Specialized in Rwandan Agriculture",
+              style: TextStyle(
+                color: DoctorCropColors.primary,
+                fontSize: 10.5,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ],
+    ),
     actions: [
       if (_messages.isNotEmpty)
-        _appBarBtn(
-          "Clear",
-          onTap: () => setState(() {
+        IconButton(
+          tooltip: "New Chat",
+          onPressed: () => setState(() {
             _messages.clear();
             _streamBuffer = "";
           }),
-        ),
-      _appBarBtn(
-        "New chat",
-        icon: Icons.add,
-        onTap: () => setState(() {
-          _messages.clear();
-          _streamBuffer = "";
-        }),
-      ),
-      _appBarIcon(Icons.history),
-      _appBarIcon(Icons.more_vert),
-    ],
-  );
-
-  Widget _appBarBtn(
-    String label, {
-    IconData? icon,
-    required VoidCallback onTap,
-  }) => GestureDetector(
-    onTap: onTap,
-    child: Container(
-      margin: const EdgeInsets.only(right: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: _surface,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: _border, width: 0.8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (icon != null) ...[Icon(icon, size: 15), const SizedBox(width: 5)],
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF777777),
+          icon: Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: DoctorCropColors.surfaceMuted,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: DoctorCropColors.border, width: 0.8),
+            ),
+            child: const Icon(
+              Icons.add_rounded,
+              color: DoctorCropColors.textPrimary,
+              size: 20,
             ),
           ),
-        ],
-      ),
+        ),
+      const SizedBox(width: 8),
+    ],
+    bottom: PreferredSize(
+      preferredSize: const Size.fromHeight(1),
+      child: Container(height: 0.9, color: DoctorCropColors.border),
     ),
   );
 
-  Widget _appBarIcon(IconData icon) => Container(
-    margin: const EdgeInsets.only(right: 10),
-    padding: const EdgeInsets.all(8),
-    decoration: BoxDecoration(
-      color: _surface,
-      borderRadius: BorderRadius.circular(10),
-      border: Border.all(color: _border, width: 0.8),
-    ),
-    child: Icon(icon, size: 18),
-  );
-
-  // ── Empty state ──────────────────────────────────────────────────────
   Widget _buildEmptyState() => ListView(
-    padding: const EdgeInsets.fromLTRB(20, 40, 20, 20),
+    padding: const EdgeInsets.fromLTRB(20, 28, 20, 20),
     children: [
+      Center(
+        child: Container(
+          width: 68,
+          height: 68,
+          decoration: BoxDecoration(
+            color: DoctorCropColors.primaryLight,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: DoctorCropColors.primary.withOpacity(0.18),
+                blurRadius: 18,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: const Icon(
+            Icons.auto_awesome_rounded,
+            color: DoctorCropColors.primary,
+            size: 32,
+          ),
+        ),
+      ),
+      const SizedBox(height: 18),
       const Center(
         child: Text(
-          "Genome AI",
+          "Doctor Crop Genome AI",
           style: TextStyle(
-            fontSize: 22,
+            fontSize: 20,
             fontWeight: FontWeight.w800,
-            letterSpacing: -0.4,
+            color: DoctorCropColors.textPrimary,
+            letterSpacing: -0.3,
           ),
         ),
       ),
       const SizedBox(height: 6),
       const Center(
         child: Text(
-          "Ask me anything about crops, diseases,\nfarming tips, or market advice.",
+          "Ask questions about Rwandan crop varieties, soil care,\ndisease remedies, and local market trends.",
           textAlign: TextAlign.center,
-          style: TextStyle(color: Color(0xFFAAAAAA), fontSize: 13, height: 1.5),
+          style: TextStyle(
+            color: DoctorCropColors.textSecondary,
+            fontSize: 12.5,
+            height: 1.45,
+          ),
         ),
       ),
-      const SizedBox(height: 32),
+      const SizedBox(height: 28),
       const Text(
-        "Try asking",
+        "RECOMMENDED TOPICS",
         style: TextStyle(
-          color: Color(0xFFAAAAAA),
+          color: DoctorCropColors.textMuted,
           fontSize: 11,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w700,
           letterSpacing: 0.8,
         ),
       ),
-      const SizedBox(height: 12),
+      const SizedBox(height: 10),
       ..._suggestions.map(
         (s) => GestureDetector(
           onTap: () => _sendMessage(s["text"] as String),
           child: Container(
             margin: const EdgeInsets.only(bottom: 10),
-            padding: const EdgeInsets.fromLTRB(14, 13, 14, 13),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: _border, width: 0.9),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.03),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
+            padding: const EdgeInsets.all(14),
+            decoration: DoctorCropTheme.cardDecoration(),
             child: Row(
               children: [
                 Container(
-                  width: 36,
-                  height: 36,
+                  width: 38,
+                  height: 38,
                   decoration: BoxDecoration(
                     color: (s["color"] as Color).withOpacity(0.10),
                     borderRadius: BorderRadius.circular(10),
@@ -329,7 +354,7 @@ class _GenomeAIPageState extends State<GenomeAIPage> {
                   child: Icon(
                     s["icon"] as IconData,
                     color: s["color"] as Color,
-                    size: 18,
+                    size: 19,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -337,16 +362,16 @@ class _GenomeAIPageState extends State<GenomeAIPage> {
                   child: Text(
                     s["text"] as String,
                     style: const TextStyle(
-                      color: _ink,
+                      color: DoctorCropColors.textPrimary,
                       fontSize: 13,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w600,
                       height: 1.35,
                     ),
                   ),
                 ),
                 const Icon(
                   Icons.arrow_forward_ios_rounded,
-                  color: Color(0xFFCCCCCC),
+                  color: DoctorCropColors.textMuted,
                   size: 13,
                 ),
               ],
@@ -357,38 +382,62 @@ class _GenomeAIPageState extends State<GenomeAIPage> {
     ],
   );
 
-  // ── Bubble ───────────────────────────────────────────────────────────
   Widget _buildBubble(Map<String, String> msg) {
     final isUser = msg["role"] == "user";
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: 14),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: isUser
-            ? MainAxisAlignment.end
-            : MainAxisAlignment.start,
+        mainAxisAlignment:
+            isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
         children: [
+          if (!isUser) ...[
+            Container(
+              width: 32,
+              height: 32,
+              margin: const EdgeInsets.only(right: 8, top: 4),
+              decoration: BoxDecoration(
+                color: DoctorCropColors.primaryLight,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.auto_awesome_rounded,
+                color: DoctorCropColors.primary,
+                size: 16,
+              ),
+            ),
+          ],
           Flexible(
             child: Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: isUser ? 14 : 3,
-                vertical: 11,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
               ),
               decoration: BoxDecoration(
-                color: isUser ? Colors.black54 : Colors.white,
+                color: isUser ? DoctorCropColors.primary : Colors.white,
                 borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(18),
-                  topRight: const Radius.circular(18),
-                  bottomLeft: Radius.circular(isUser ? 18 : 4),
-                  bottomRight: Radius.circular(isUser ? 4 : 18),
+                  topLeft: const Radius.circular(16),
+                  topRight: const Radius.circular(16),
+                  bottomLeft: Radius.circular(isUser ? 16 : 4),
+                  bottomRight: Radius.circular(isUser ? 4 : 16),
                 ),
+                border: isUser
+                    ? null
+                    : Border.all(color: DoctorCropColors.border, width: 0.9),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.025),
+                    blurRadius: 4,
+                    offset: const Offset(0, 1),
+                  ),
+                ],
               ),
               child: Text(
                 msg["text"] ?? "",
                 style: TextStyle(
-                  color: isUser ? Colors.white : _ink,
+                  color: isUser ? Colors.white : DoctorCropColors.textPrimary,
                   fontSize: 13.5,
-                  height: 1.52,
+                  height: 1.48,
                 ),
               ),
             ),
@@ -398,37 +447,45 @@ class _GenomeAIPageState extends State<GenomeAIPage> {
     );
   }
 
-  // ── Typing dots ──────────────────────────────────────────────────────
   Widget _buildTypingIndicator() => Padding(
-    padding: const EdgeInsets.only(bottom: 16),
+    padding: const EdgeInsets.only(bottom: 14),
     child: Row(
       children: [
-        const SizedBox(width: 8),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          width: 32,
+          height: 32,
+          margin: const EdgeInsets.only(right: 8),
           decoration: BoxDecoration(
-            color: const Color(0xFFF7F7F5),
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(18),
-              topRight: Radius.circular(18),
-              bottomRight: Radius.circular(18),
-              bottomLeft: Radius.circular(4),
-            ),
+            color: DoctorCropColors.primaryLight,
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(
+            Icons.auto_awesome_rounded,
+            color: DoctorCropColors.primary,
+            size: 16,
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: DoctorCropColors.border, width: 0.9),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: List.generate(
               3,
               (i) => TweenAnimationBuilder<double>(
-                tween: Tween(begin: 0.2, end: 0.8),
+                tween: Tween(begin: 0.3, end: 1.0),
                 duration: Duration(milliseconds: 500 + i * 160),
                 curve: Curves.easeInOut,
                 builder: (_, v, __) => Container(
                   margin: const EdgeInsets.symmetric(horizontal: 3),
-                  width: 7,
-                  height: 7,
+                  width: 6.5,
+                  height: 6.5,
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(v),
+                    color: DoctorCropColors.primary.withOpacity(v),
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -440,29 +497,50 @@ class _GenomeAIPageState extends State<GenomeAIPage> {
     ),
   );
 
-  // ── Input bar ────────────────────────────────────────────────────────
-  Widget _buildInputBar() => Padding(
-    padding: EdgeInsets.only(left: 16, right: 16, bottom: 20),
+  Widget _buildInputBar() => Container(
+    padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      border: const Border(
+        top: BorderSide(color: DoctorCropColors.border, width: 0.9),
+      ),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.03),
+          blurRadius: 8,
+          offset: const Offset(0, -2),
+        ),
+      ],
+    ),
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         Expanded(
           child: Container(
             decoration: BoxDecoration(
-              color: _surface,
+              color: DoctorCropColors.surfaceMuted,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: _border, width: 0.9),
+              border: Border.all(color: DoctorCropColors.border, width: 0.8),
             ),
             child: TextField(
               controller: _controller,
               minLines: 1,
-              maxLines: 5,
-              style: const TextStyle(fontSize: 13.5, color: _ink, height: 1.4),
+              maxLines: 4,
+              style: const TextStyle(
+                fontSize: 13.5,
+                color: DoctorCropColors.textPrimary,
+                height: 1.4,
+              ),
               onSubmitted: _sendMessage,
               decoration: const InputDecoration(
                 hintText: "Ask Genome AI anything...",
-                hintStyle: TextStyle(color: Color(0xFFBBBBBB), fontSize: 13),
+                hintStyle: TextStyle(
+                  color: DoctorCropColors.textMuted,
+                  fontSize: 13,
+                ),
                 border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
                 contentPadding: EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 12,
@@ -479,7 +557,9 @@ class _GenomeAIPageState extends State<GenomeAIPage> {
             width: 46,
             height: 46,
             decoration: BoxDecoration(
-              color: _isLoading ? const Color(0xFFCCCCCC) : Colors.black,
+              color: _isLoading
+                  ? DoctorCropColors.border
+                  : DoctorCropColors.primary,
               borderRadius: BorderRadius.circular(14),
             ),
             child: _isLoading
@@ -489,7 +569,7 @@ class _GenomeAIPageState extends State<GenomeAIPage> {
                       height: 18,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: Colors.white,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
                     ),
                   )

@@ -1,3 +1,4 @@
+import 'package:agriconnect_v0/theme/app_theme.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
@@ -18,7 +19,7 @@ class _SeasonalPageState extends State<SeasonalPage> {
       cropType: "Food crop",
       plantedQuantity: "480 kg seeds",
       period: "Jan 2025 - Jun 2025",
-      status: "Done",
+      status: "Harvest Completed",
       predictedYield: 8200,
       actualYield: 7600,
       revenue: 3420000,
@@ -51,7 +52,7 @@ class _SeasonalPageState extends State<SeasonalPage> {
       cropType: "Cash crop",
       plantedQuantity: "12,000 seedlings",
       period: "Aug 2024 - Dec 2024",
-      status: "Done",
+      status: "Harvest Completed",
       predictedYield: 5400,
       actualYield: 6100,
       revenue: 4280000,
@@ -112,24 +113,60 @@ class _SeasonalPageState extends State<SeasonalPage> {
     }).toList();
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: DoctorCropColors.background,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        leading: IconButton(
+          icon: Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: DoctorCropColors.surfaceMuted,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: DoctorCropColors.border, width: 0.8),
+            ),
+            child: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              size: 16,
+              color: DoctorCropColors.textPrimary,
+            ),
+          ),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          "Farm Seasonal History",
+          style: TextStyle(
+            color: DoctorCropColors.textPrimary,
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(height: 0.9, color: DoctorCropColors.border),
+        ),
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _openCreateSeason,
-        backgroundColor: const Color(0xFF16A34A),
+        backgroundColor: DoctorCropColors.primary,
         foregroundColor: Colors.white,
-        icon: const Icon(Icons.add),
-        label: const Text("Add Season"),
+        icon: const Icon(Icons.add_rounded),
+        label: const Text(
+          "New Season",
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
       ),
       body: SafeArea(
         child: Column(
           children: [
             _buildSeasonSearchHeader(),
-
             Expanded(
               child: ListView.separated(
-                padding: const EdgeInsets.all(14),
+                padding: const EdgeInsets.all(16),
                 itemCount: filteredSeasons.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 14),
+                separatorBuilder: (_, __) => const SizedBox(height: 12),
                 itemBuilder: (context, index) {
                   return SeasonHistoryCard(
                     season: filteredSeasons[index],
@@ -146,18 +183,18 @@ class _SeasonalPageState extends State<SeasonalPage> {
 
   Widget _buildSeasonSearchHeader() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
-      decoration: BoxDecoration(color: Colors.black.withAlpha(200)),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      color: Colors.white,
       child: Row(
         children: [
           Expanded(
             child: Container(
-              height: 46,
+              height: 44,
               padding: const EdgeInsets.symmetric(horizontal: 12),
               decoration: BoxDecoration(
-                color: Colors.white.withAlpha(22),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: Colors.white.withAlpha(24)),
+                color: DoctorCropColors.surfaceMuted,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: DoctorCropColors.border, width: 0.8),
               ),
               child: TextField(
                 onChanged: (value) {
@@ -165,38 +202,52 @@ class _SeasonalPageState extends State<SeasonalPage> {
                     searchQuery = value;
                   });
                 },
-                style: const TextStyle(color: Colors.white, fontSize: 13),
+                style: const TextStyle(
+                  color: DoctorCropColors.textPrimary,
+                  fontSize: 13,
+                ),
                 decoration: const InputDecoration(
-                  icon: Icon(Icons.search, color: Colors.white70, size: 18),
-                  hintText: "Search seasons, crops, location...",
-                  hintStyle: TextStyle(color: Colors.white54, fontSize: 13),
+                  icon: Icon(
+                    Icons.search_rounded,
+                    color: DoctorCropColors.textMuted,
+                    size: 18,
+                  ),
+                  hintText: "Search seasons, crops, locations...",
+                  hintStyle: TextStyle(
+                    color: DoctorCropColors.textMuted,
+                    fontSize: 13,
+                  ),
                   border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(vertical: 12),
                 ),
               ),
             ),
           ),
-
           const SizedBox(width: 10),
-
           InkWell(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(12),
             onTap: () {
               setState(() {
                 seasons.sort((a, b) => b.actualYield.compareTo(a.actualYield));
               });
             },
             child: Container(
-              height: 46,
-              width: 46,
+              height: 44,
+              width: 44,
               decoration: BoxDecoration(
-                color: Colors.white.withAlpha(24),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: Colors.white.withAlpha(26)),
+                color: DoctorCropColors.primaryLight,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: DoctorCropColors.primary.withOpacity(0.2),
+                  width: 0.8,
+                ),
               ),
               child: const Icon(
                 Icons.sort_rounded,
-                color: Colors.white,
-                size: 23,
+                color: DoctorCropColors.primary,
+                size: 22,
               ),
             ),
           ),
@@ -220,25 +271,26 @@ class SeasonHistoryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(14),
       child: Container(
-        height: 150,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: const Color(0xFFE5E7EB)),
-          borderRadius: BorderRadius.circular(10),
-        ),
+        height: 140,
+        decoration: DoctorCropTheme.cardDecoration(hasShadow: true),
         clipBehavior: Clip.antiAlias,
         child: Row(
           children: [
             SizedBox(
-              width: 135,
+              width: 130,
               height: double.infinity,
-              child: Image.network(season.imageUrl, fit: BoxFit.cover),
+              child: Image.network(
+                season.imageUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) =>
+                    Container(color: DoctorCropColors.surfaceMuted),
+              ),
             ),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+                padding: const EdgeInsets.all(12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -247,50 +299,65 @@ class SeasonHistoryCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        color: Color(0xFF111827),
-                        fontSize: 16,
+                        color: DoctorCropColors.textPrimary,
+                        fontSize: 15,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     Text(
                       season.period,
                       style: const TextStyle(
-                        color: Color(0xFF2563EB),
-                        fontSize: 13,
+                        color: DoctorCropColors.primary,
+                        fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      season.location,
-                      style: const TextStyle(
-                        color: Color(0xFF6B7280),
-                        fontSize: 13,
-                      ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.location_on_outlined,
+                          size: 11,
+                          color: DoctorCropColors.textMuted,
+                        ),
+                        const SizedBox(width: 3),
+                        Expanded(
+                          child: Text(
+                            season.location,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: DoctorCropColors.textSecondary,
+                              fontSize: 11.5,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const Spacer(),
                     Row(
                       children: [
                         _SmallStatus(
                           text: season.status,
-                          color: const Color(0xFF16A34A),
+                          color: DoctorCropColors.primary,
                         ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            "${season.actualYield.toInt()} kg output",
+                            "${season.actualYield.toInt()} kg yield",
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
-                              color: Color(0xFFF97316),
-                              fontSize: 12,
+                              color: DoctorCropColors.accent,
+                              fontSize: 11.5,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
                         ),
                         const Icon(
-                          Icons.chevron_right,
-                          color: Color(0xFF9CA3AF),
+                          Icons.chevron_right_rounded,
+                          size: 18,
+                          color: DoctorCropColors.textMuted,
                         ),
                       ],
                     ),
@@ -316,100 +383,153 @@ class SeasonDetailsPage extends StatelessWidget {
         .toStringAsFixed(1);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: DoctorCropColors.background,
       appBar: AppBar(
-        backgroundColor: Colors.black.withAlpha(200),
+        backgroundColor: Colors.white,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+        surfaceTintColor: Colors.transparent,
+        leading: IconButton(
+          icon: Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: DoctorCropColors.surfaceMuted,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: DoctorCropColors.border, width: 0.8),
+            ),
+            child: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              size: 16,
+              color: DoctorCropColors.textPrimary,
+            ),
+          ),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: Text(
           season.name,
           style: const TextStyle(
-            color: Colors.white,
+            color: DoctorCropColors.textPrimary,
             fontSize: 17,
             fontWeight: FontWeight.w700,
           ),
         ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(height: 0.9, color: DoctorCropColors.border),
+        ),
       ),
       body: ListView(
-        padding: const EdgeInsets.only(bottom: 26),
+        padding: const EdgeInsets.only(bottom: 32),
         children: [
           _TopImage(season: season),
 
           Padding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _SectionTitle("Season Description"),
-                const SizedBox(height: 6),
-                Text(
-                  season.description,
-                  style: const TextStyle(
-                    color: Color(0xFF374151),
-                    fontSize: 14,
-                    height: 1.55,
+                _SectionTitle("Season Summary"),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: DoctorCropTheme.cardDecoration(),
+                  child: Text(
+                    season.description,
+                    style: const TextStyle(
+                      color: DoctorCropColors.textSecondary,
+                      fontSize: 13.5,
+                      height: 1.5,
+                    ),
                   ),
                 ),
 
                 const SizedBox(height: 20),
 
-                _SectionTitle("Yield and Products"),
+                _SectionTitle("Yield Performance & Products"),
                 const SizedBox(height: 8),
-                _YieldProductTable(season: season, performance: performance),
+                Container(
+                  decoration: DoctorCropTheme.cardDecoration(),
+                  clipBehavior: Clip.antiAlias,
+                  child: _YieldProductTable(season: season, performance: performance),
+                ),
 
-                const SizedBox(height: 22),
+                const SizedBox(height: 20),
 
-                _SectionTitle("Supplied Places"),
+                _SectionTitle("Distribution & Market Destinations"),
                 const SizedBox(height: 8),
-                _SuppliedPlacesTable(places: season.suppliedPlaces),
+                Container(
+                  decoration: DoctorCropTheme.cardDecoration(),
+                  clipBehavior: Clip.antiAlias,
+                  child: _SuppliedPlacesTable(places: season.suppliedPlaces),
+                ),
 
-                const SizedBox(height: 22),
+                const SizedBox(height: 20),
 
-                _SectionTitle("Production Images"),
+                _SectionTitle("Farm Production Gallery"),
                 const SizedBox(height: 8),
                 _ProductionImageGrid(images: season.productionImages),
 
                 const SizedBox(height: 24),
 
-                _SectionTitle("Predicted vs Actual Yield"),
+                _SectionTitle("Predicted vs. Actual Harvest Output"),
                 const SizedBox(height: 4),
                 const Text(
-                  "Mountain-style growth comparison across the season.",
-                  style: TextStyle(color: Color(0xFF6B7280), fontSize: 13),
+                  "Monthly growth progression tracking against expected yields.",
+                  style: TextStyle(
+                    color: DoctorCropColors.textMuted,
+                    fontSize: 12,
+                  ),
                 ),
                 const SizedBox(height: 12),
-                SizedBox(height: 285, child: _YieldLineChart(season: season)),
-
-                const SizedBox(height: 26),
-
-                _SectionTitle("Rain and Sales Performance"),
-                const SizedBox(height: 4),
-                const Text(
-                  "Rain and sales score comparison by season month.",
-                  style: TextStyle(color: Color(0xFF6B7280), fontSize: 13),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: DoctorCropTheme.cardDecoration(),
+                  child: SizedBox(
+                    height: 260,
+                    child: _YieldLineChart(season: season),
+                  ),
                 ),
-                const SizedBox(height: 12),
-                SizedBox(height: 285, child: _RainSalesBarChart()),
 
                 const SizedBox(height: 24),
 
+                _SectionTitle("Rainfall & Sales Score Comparison"),
+                const SizedBox(height: 4),
+                const Text(
+                  "Correlation between monthly precipitation and wholesale revenue score.",
+                  style: TextStyle(
+                    color: DoctorCropColors.textMuted,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: DoctorCropTheme.cardDecoration(),
+                  child: SizedBox(
+                    height: 260,
+                    child: _RainSalesBarChart(),
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
                 _InfoCard(
                   title: "Genome AI Market Exploration",
-                  icon: Icons.auto_awesome,
-                  color: const Color(0xFF16A34A),
+                  icon: Icons.auto_awesome_rounded,
+                  color: DoctorCropColors.primary,
                   text: season.genomeInsight,
                 ),
 
-                const SizedBox(height: 14),
+                const SizedBox(height: 12),
 
                 _InfoCard(
-                  title: "Climate Behavior",
-                  icon: Icons.cloud,
-                  color: const Color(0xFF2563EB),
+                  title: "Climate Behavior Analysis",
+                  icon: Icons.cloud_rounded,
+                  color: DoctorCropColors.info,
                   text: season.climateSummary,
                 ),
 
-                const SizedBox(height: 18),
+                const SizedBox(height: 16),
 
                 _SeasonVideoCard(),
               ],
@@ -429,7 +549,7 @@ class _TopImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 225,
+      height: 220,
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -439,9 +559,9 @@ class _TopImage extends StatelessWidget {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  Colors.black.withAlpha(120),
-                  Colors.black.withAlpha(35),
-                  Colors.black.withAlpha(135),
+                  Colors.black.withOpacity(0.55),
+                  Colors.transparent,
+                  Colors.black.withOpacity(0.70),
                 ],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
@@ -455,7 +575,7 @@ class _TopImage extends StatelessWidget {
             child: _ImageBadge(
               text: season.status,
               icon: Icons.check_circle_outline,
-              color: const Color(0xFF16A34A),
+              color: DoctorCropColors.primary,
             ),
           ),
 
@@ -465,14 +585,14 @@ class _TopImage extends StatelessWidget {
             child: _ImageBadge(
               text: season.cropType,
               icon: Icons.eco_outlined,
-              color: const Color(0xFFF97316),
+              color: DoctorCropColors.accent,
             ),
           ),
 
           Positioned(
             left: 16,
             right: 16,
-            bottom: 18,
+            bottom: 16,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -480,17 +600,17 @@ class _TopImage extends StatelessWidget {
                   season.name,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 22,
+                    fontSize: 20,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
                 Row(
                   children: [
                     const Icon(
                       Icons.location_on_outlined,
                       color: Colors.white70,
-                      size: 15,
+                      size: 14,
                     ),
                     const SizedBox(width: 4),
                     Expanded(
@@ -498,7 +618,7 @@ class _TopImage extends StatelessWidget {
                         "${season.period} • ${season.location}",
                         style: const TextStyle(
                           color: Colors.white70,
-                          fontSize: 13,
+                          fontSize: 12.5,
                         ),
                       ),
                     ),
@@ -527,16 +647,16 @@ class _ImageBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: Colors.white.withAlpha(235),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withAlpha(70)),
+        color: Colors.white.withOpacity(0.92),
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 5),
+          Icon(icon, size: 13, color: color),
+          const SizedBox(width: 4),
           Text(
             text,
             style: TextStyle(
@@ -582,7 +702,7 @@ class _YieldProductTable extends StatelessWidget {
     ];
 
     return Table(
-      border: TableBorder.all(color: const Color(0xFFE5E7EB)),
+      border: TableBorder.all(color: DoctorCropColors.border, width: 0.8),
       columnWidths: const {
         0: FlexColumnWidth(1.25),
         1: FlexColumnWidth(1),
@@ -603,10 +723,10 @@ class _SuppliedPlacesTable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Table(
-      border: TableBorder.all(color: const Color(0xFFE5E7EB)),
+      border: TableBorder.all(color: DoctorCropColors.border, width: 0.8),
       columnWidths: const {0: FlexColumnWidth(1.4), 1: FlexColumnWidth(1.1)},
       children: [
-        _tableRow(["Place", "Phone"], isHeader: true),
+        _tableRow(["Place", "Phone Contact"], isHeader: true),
         ...places.map((place) => _tableRow([place.name, place.phone])),
       ],
     );
@@ -616,17 +736,17 @@ class _SuppliedPlacesTable extends StatelessWidget {
 TableRow _tableRow(List<String> values, {bool isHeader = false}) {
   return TableRow(
     decoration: BoxDecoration(
-      color: isHeader ? const Color(0xFFF9FAFB) : Colors.white,
+      color: isHeader ? DoctorCropColors.surfaceMuted : Colors.white,
     ),
     children: values.map((value) {
       return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
         child: Text(
           value,
           style: TextStyle(
-            color: const Color(0xFF111827),
+            color: DoctorCropColors.textPrimary,
             fontSize: 12,
-            fontWeight: isHeader ? FontWeight.w800 : FontWeight.w500,
+            fontWeight: isHeader ? FontWeight.w700 : FontWeight.w500,
           ),
         ),
       );
@@ -655,7 +775,7 @@ class _ProductionImageGrid extends StatelessWidget {
       ),
       itemBuilder: (context, index) {
         return ClipRRect(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(10),
           child: Image.network(shownImages[index], fit: BoxFit.cover),
         );
       },
@@ -676,22 +796,38 @@ class _YieldLineChart extends StatelessWidget {
         maxX: 5,
         minY: 0,
         maxY: 9000,
-        gridData: const FlGridData(show: true),
-        borderData: FlBorderData(show: true),
+        gridData: FlGridData(
+          show: true,
+          getDrawingHorizontalLine: (value) => FlLine(
+            color: DoctorCropColors.border,
+            strokeWidth: 0.6,
+          ),
+          getDrawingVerticalLine: (value) => FlLine(
+            color: DoctorCropColors.border,
+            strokeWidth: 0.6,
+          ),
+        ),
+        borderData: FlBorderData(
+          show: true,
+          border: Border.all(color: DoctorCropColors.border, width: 0.8),
+        ),
         titlesData: FlTitlesData(
           leftTitles: AxisTitles(
             axisNameWidget: const Text(
               "Yield kg",
-              style: TextStyle(fontSize: 11),
+              style: TextStyle(fontSize: 10, color: DoctorCropColors.textMuted),
             ),
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: 42,
+              reservedSize: 38,
               interval: 2000,
               getTitlesWidget: (value, meta) {
                 return Text(
                   value.toInt().toString(),
-                  style: const TextStyle(fontSize: 10),
+                  style: const TextStyle(
+                    fontSize: 9.5,
+                    color: DoctorCropColors.textMuted,
+                  ),
                 );
               },
             ),
@@ -699,7 +835,7 @@ class _YieldLineChart extends StatelessWidget {
           bottomTitles: AxisTitles(
             axisNameWidget: const Text(
               "Growth Month",
-              style: TextStyle(fontSize: 11),
+              style: TextStyle(fontSize: 10, color: DoctorCropColors.textMuted),
             ),
             sideTitles: SideTitles(
               showTitles: true,
@@ -707,7 +843,10 @@ class _YieldLineChart extends StatelessWidget {
               getTitlesWidget: (value, meta) {
                 return Text(
                   "M${value.toInt() + 1}",
-                  style: const TextStyle(fontSize: 10),
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: DoctorCropColors.textSecondary,
+                  ),
                 );
               },
             ),
@@ -730,11 +869,11 @@ class _YieldLineChart extends StatelessWidget {
               FlSpot(5, season.predictedYield),
             ],
             isCurved: true,
-            barWidth: 3,
-            color: const Color(0xFF16A34A),
+            barWidth: 2.8,
+            color: DoctorCropColors.primary,
             belowBarData: BarAreaData(
               show: true,
-              color: const Color(0xFF16A34A).withAlpha(35),
+              color: DoctorCropColors.primary.withOpacity(0.12),
             ),
           ),
           LineChartBarData(
@@ -747,11 +886,11 @@ class _YieldLineChart extends StatelessWidget {
               FlSpot(5, season.actualYield),
             ],
             isCurved: true,
-            barWidth: 3,
-            color: const Color(0xFF2563EB),
+            barWidth: 2.8,
+            color: DoctorCropColors.info,
             belowBarData: BarAreaData(
               show: true,
-              color: const Color(0xFF2563EB).withAlpha(28),
+              color: DoctorCropColors.info.withOpacity(0.10),
             ),
           ),
         ],
@@ -766,22 +905,34 @@ class _RainSalesBarChart extends StatelessWidget {
     return BarChart(
       BarChartData(
         maxY: 10,
-        gridData: const FlGridData(show: true),
-        borderData: FlBorderData(show: true),
+        gridData: FlGridData(
+          show: true,
+          getDrawingHorizontalLine: (value) => FlLine(
+            color: DoctorCropColors.border,
+            strokeWidth: 0.6,
+          ),
+        ),
+        borderData: FlBorderData(
+          show: true,
+          border: Border.all(color: DoctorCropColors.border, width: 0.8),
+        ),
         titlesData: FlTitlesData(
           leftTitles: AxisTitles(
             axisNameWidget: const Text(
               "Score / 10",
-              style: TextStyle(fontSize: 11),
+              style: TextStyle(fontSize: 10, color: DoctorCropColors.textMuted),
             ),
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: 32,
+              reservedSize: 28,
               interval: 2,
               getTitlesWidget: (value, meta) {
                 return Text(
                   value.toInt().toString(),
-                  style: const TextStyle(fontSize: 10),
+                  style: const TextStyle(
+                    fontSize: 9.5,
+                    color: DoctorCropColors.textMuted,
+                  ),
                 );
               },
             ),
@@ -789,7 +940,7 @@ class _RainSalesBarChart extends StatelessWidget {
           bottomTitles: AxisTitles(
             axisNameWidget: const Text(
               "Season Month",
-              style: TextStyle(fontSize: 11),
+              style: TextStyle(fontSize: 10, color: DoctorCropColors.textMuted),
             ),
             sideTitles: SideTitles(
               showTitles: true,
@@ -797,7 +948,10 @@ class _RainSalesBarChart extends StatelessWidget {
               getTitlesWidget: (value, meta) {
                 return Text(
                   "M${value.toInt() + 1}",
-                  style: const TextStyle(fontSize: 10),
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: DoctorCropColors.textSecondary,
+                  ),
                 );
               },
             ),
@@ -819,14 +973,14 @@ class _RainSalesBarChart extends StatelessWidget {
             barRods: [
               BarChartRodData(
                 toY: rain,
-                width: 11,
-                color: const Color(0xFF2563EB),
+                width: 10,
+                color: DoctorCropColors.info,
                 borderRadius: BorderRadius.circular(3),
               ),
               BarChartRodData(
                 toY: sales,
-                width: 11,
-                color: const Color(0xFFF97316),
+                width: 10,
+                color: DoctorCropColors.accent,
                 borderRadius: BorderRadius.circular(3),
               ),
             ],
@@ -856,19 +1010,23 @@ class _InfoCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: color.withAlpha(14),
-        border: Border.all(color: color.withAlpha(50)),
-        borderRadius: BorderRadius.circular(10),
+        color: color.withOpacity(0.06),
+        border: Border.all(color: color.withOpacity(0.2)),
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(
-            radius: 17,
-            backgroundColor: color.withAlpha(28),
-            child: Icon(icon, color: color, size: 19),
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: color, size: 20),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -877,16 +1035,16 @@ class _InfoCard extends StatelessWidget {
                   title,
                   style: TextStyle(
                     color: color,
-                    fontSize: 15,
+                    fontSize: 14,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
                 Text(
                   text,
                   style: const TextStyle(
-                    color: Color(0xFF374151),
-                    fontSize: 13,
+                    color: DoctorCropColors.textSecondary,
+                    fontSize: 12.5,
                     height: 1.45,
                   ),
                 ),
@@ -903,22 +1061,21 @@ class _SeasonVideoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 42),
-      height: 180,
+      margin: const EdgeInsets.only(bottom: 24),
+      height: 170,
       width: double.infinity,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         gradient: const LinearGradient(
-          colors: [Color(0xFFFFFFFF), Color(0xFF111827)],
+          colors: [Color(0xFF0F381E), Color(0xFF1E5B33)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        border: Border.all(color: Color(0xFFE5E7EB)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(22),
-            blurRadius: 16,
-            offset: Offset(0, 8),
+            color: Colors.black.withOpacity(0.12),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -928,55 +1085,51 @@ class _SeasonVideoCard extends StatelessWidget {
             left: 16,
             top: 16,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                color: const Color(0xFF16A34A).withAlpha(35),
-                borderRadius: BorderRadius.circular(999),
+                color: Colors.white.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(20),
               ),
               child: const Text(
-                "Season Review",
+                "Seasonal Harvest Review",
                 style: TextStyle(
-                  color: Color(0xFF16A34A),
+                  color: Colors.white,
                   fontSize: 11,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
           ),
-
           Center(
             child: Container(
-              width: 58,
-              height: 58,
+              width: 52,
+              height: 52,
               decoration: BoxDecoration(
-                color: const Color(0xFFF97316),
+                color: DoctorCropColors.accent,
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withAlpha(45),
-                    blurRadius: 14,
-                    offset: const Offset(0, 6),
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 10,
                   ),
                 ],
               ),
               child: const Icon(
                 Icons.play_arrow_rounded,
                 color: Colors.white,
-                size: 38,
+                size: 34,
               ),
             ),
           ),
-
           const Positioned(
             left: 16,
             right: 16,
             bottom: 16,
             child: Text(
-              "Watch seasonal review, harvest story, market performance, and farm output summary.",
+              "Watch full seasonal review, harvest story, and market performance recap.",
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 13,
-                height: 1.35,
+                fontSize: 12.5,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -994,19 +1147,14 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Color color = const Color(0xFF111827);
-
-    if (text.contains("Yield") || text.contains("Description")) {
-      color = const Color(0xFF16A34A);
-    } else if (text.contains("Rain") || text.contains("Supplied")) {
-      color = const Color(0xFF2563EB);
-    } else if (text.contains("Images")) {
-      color = const Color(0xFFF97316);
-    }
-
     return Text(
       text,
-      style: TextStyle(color: color, fontSize: 16, fontWeight: FontWeight.w800),
+      style: const TextStyle(
+        color: DoctorCropColors.textPrimary,
+        fontSize: 15,
+        fontWeight: FontWeight.w800,
+        letterSpacing: -0.2,
+      ),
     );
   }
 }
@@ -1020,17 +1168,17 @@ class _SmallStatus extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withAlpha(24),
-        borderRadius: BorderRadius.circular(999),
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(10),
       ),
       child: Text(
         text,
         style: TextStyle(
           color: color,
-          fontSize: 11,
-          fontWeight: FontWeight.w800,
+          fontSize: 10.5,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );
@@ -1059,7 +1207,7 @@ class _CreateSeasonPageState extends State<CreateSeasonPage> {
     final season = SeasonModel(
       name: nameController.text.isEmpty ? "New Season" : nameController.text,
       location: locationController.text.isEmpty
-          ? "Unknown"
+          ? "Rwanda"
           : locationController.text,
       landSize: landSizeController.text.isEmpty
           ? "0 hectares"
@@ -1069,30 +1217,28 @@ class _CreateSeasonPageState extends State<CreateSeasonPage> {
           : cropsController.text.split(",").map((e) => e.trim()).toList(),
       cropType: cropType,
       plantedQuantity: quantityController.text.isEmpty
-          ? "Unknown"
+          ? "Standard"
           : quantityController.text,
       period: "Upcoming Season",
-      status: "Prediction Active",
+      status: "Active Tracking",
       predictedYield: 6400,
       actualYield: 0,
       revenue: 0,
       buyers: 0,
       suppliedPlaces: [
-        SupplierPlace(name: "Not supplied yet", phone: "No phone"),
+        SupplierPlace(name: "Distribution pending", phone: "Pending"),
       ],
       imageUrl:
           "https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=1200",
       description:
-          "This new season has been created and will begin collecting crop, weather, price, and market performance data.",
+          "This season has been recorded and will monitor crop growth, soil health, and market performance in Rwanda.",
       climateSummary:
-          "Climate tracking will begin after rainfall and temperature data is collected.",
+          "Weather station records will be updated automatically as precipitation begins.",
       genomeInsight:
-          "Genome AI will monitor market prices, harvest timing, demand, and possible buyers.",
+          "Genome AI is monitoring market trends and buyer demand across local markets.",
       productionImages: [
         "https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=900",
         "https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=900",
-        "https://images.unsplash.com/photo-1523741543316-beb7fc7023d8?w=900",
-        "https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=900",
       ],
     );
 
@@ -1103,47 +1249,92 @@ class _CreateSeasonPageState extends State<CreateSeasonPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: DoctorCropColors.background,
       appBar: AppBar(
-        backgroundColor: Colors.black.withAlpha(200),
-        iconTheme: const IconThemeData(color: Colors.white),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: DoctorCropColors.surfaceMuted,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: DoctorCropColors.border, width: 0.8),
+            ),
+            child: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              size: 16,
+              color: DoctorCropColors.textPrimary,
+            ),
+          ),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: const Text(
-          "Create Season",
-          style: TextStyle(color: Colors.white),
+          "Record New Season",
+          style: TextStyle(
+            color: DoctorCropColors.textPrimary,
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(height: 0.9, color: DoctorCropColors.border),
         ),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _Input(controller: nameController, label: "Season name"),
-          _Input(controller: locationController, label: "Farm location"),
-          _Input(controller: landSizeController, label: "Land size"),
-          _Input(
-            controller: cropsController,
-            label: "Crops, separated by comma",
-          ),
-          _Input(controller: quantityController, label: "Planting quantity"),
-          DropdownButtonFormField<String>(
-            value: cropType,
-            decoration: _inputDecoration("Crop type"),
-            items: const [
-              DropdownMenuItem(value: "Food crop", child: Text("Food crop")),
-              DropdownMenuItem(value: "Cash crop", child: Text("Cash crop")),
-              DropdownMenuItem(value: "Mixed crop", child: Text("Mixed crop")),
-            ],
-            onChanged: (value) {
-              if (value != null) setState(() => cropType = value);
-            },
-          ),
-          const SizedBox(height: 22),
-          ElevatedButton(
-            onPressed: _save,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF16A34A),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 15),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: DoctorCropTheme.cardDecoration(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _Input(controller: nameController, label: "Season Name"),
+                _Input(controller: locationController, label: "Farm Location / District"),
+                _Input(controller: landSizeController, label: "Land Size (e.g. 2 hectares)"),
+                _Input(
+                  controller: cropsController,
+                  label: "Crops (e.g. Irish Potato, Maize)",
+                ),
+                _Input(controller: quantityController, label: "Planted Quantity"),
+                const SizedBox(height: 6),
+                const Text(
+                  "Crop Classification",
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: DoctorCropColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                DropdownButtonFormField<String>(
+                  value: cropType,
+                  decoration: const InputDecoration(
+                    contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: "Food crop", child: Text("Food crop")),
+                    DropdownMenuItem(value: "Cash crop", child: Text("Cash crop")),
+                    DropdownMenuItem(value: "Mixed crop", child: Text("Mixed crop")),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) setState(() => cropType = value);
+                  },
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: _save,
+                    child: const Text("Save Season Record"),
+                  ),
+                ),
+              ],
             ),
-            child: const Text("Create Season"),
           ),
         ],
       ),
@@ -1160,23 +1351,30 @@ class _Input extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 13),
-      child: TextField(
-        controller: controller,
-        decoration: _inputDecoration(label),
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w600,
+              color: DoctorCropColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 6),
+          TextField(
+            controller: controller,
+            style: const TextStyle(fontSize: 13.5),
+            decoration: InputDecoration(
+              hintText: "Enter $label",
+            ),
+          ),
+        ],
       ),
     );
   }
-}
-
-InputDecoration _inputDecoration(String label) {
-  return InputDecoration(
-    labelText: label,
-    filled: true,
-    fillColor: Colors.white,
-    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
-    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-  );
 }
 
 class SupplierPlace {

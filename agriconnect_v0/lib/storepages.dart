@@ -1,40 +1,26 @@
 import 'dart:math';
+import 'package:agriconnect_v0/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:agriconnect_v0/notifier.dart';
 
 // ─────────────────────────────────────────────────────────────
-//  DESIGN TOKENS
-// ─────────────────────────────────────────────────────────────
-const Color _ink = Color(0xFF111111);
-const Color _sub = Color(0xFF999999);
-const Color _surface = Color(0xFFFAFAF8);
-const Color _border = Color(0xFFEEEEEA);
-const Color _green = Color(0xFF40B37A);
-const Color _orange = Color(0xFFF97316);
-
-// ─────────────────────────────────────────────────────────────
-//  SHARED: back button with background
+//  SHARED: Back button with background
 // ─────────────────────────────────────────────────────────────
 Widget _backBtn(BuildContext context) {
   return GestureDetector(
     onTap: () => Navigator.pop(context),
-    child: SizedBox(
+    child: Container(
       width: 36,
       height: 36,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: const Color(0xFFF5F5F3),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: const Color(0xFFE5E5E0), width: 0.6),
-        ),
-        child: const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            SizedBox(width: 5),
-            Icon(Icons.arrow_back_ios, color: Colors.orange, size: 18),
-          ],
-        ),
+      decoration: BoxDecoration(
+        color: DoctorCropColors.surfaceMuted,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: DoctorCropColors.border, width: 0.8),
+      ),
+      child: const Icon(
+        Icons.arrow_back_ios_new_rounded,
+        color: DoctorCropColors.textPrimary,
+        size: 16,
       ),
     ),
   );
@@ -52,12 +38,12 @@ AppBar _buildAppBar(
     backgroundColor: Colors.white,
     surfaceTintColor: Colors.transparent,
     elevation: 0,
-    leadingWidth: 60,
+    leadingWidth: 54,
     leading: Center(child: _backBtn(context)),
     title: Text(
       title,
       style: const TextStyle(
-        color: _ink,
+        color: DoctorCropColors.textPrimary,
         fontSize: 17,
         fontWeight: FontWeight.w700,
         letterSpacing: -0.3,
@@ -66,13 +52,13 @@ AppBar _buildAppBar(
     actions: actions,
     bottom: PreferredSize(
       preferredSize: const Size.fromHeight(1),
-      child: Container(height: 0.8, color: _border),
+      child: Container(height: 0.9, color: DoctorCropColors.border),
     ),
   );
 }
 
 // ─────────────────────────────────────────────────────────────
-//  SHARED BottomNav  (WidgetTree style)
+//  SHARED Modern BottomNav
 // ─────────────────────────────────────────────────────────────
 Widget _sharedBottomNav({
   required int currentIndex,
@@ -80,33 +66,27 @@ Widget _sharedBottomNav({
   required List<BottomNavigationBarItem> items,
 }) {
   return Container(
-    decoration: BoxDecoration(
-      color: Colors.black54,
-      boxShadow: [
-        BoxShadow(
-          color: _orange.withOpacity(0.09),
-          blurRadius: 10,
-          offset: const Offset(0, -4),
+    decoration: DoctorCropTheme.bottomNavDecoration(),
+    child: SafeArea(
+      top: false,
+      child: BottomNavigationBar(
+        currentIndex: currentIndex,
+        onTap: onTap,
+        type: BottomNavigationBarType.fixed,
+        backgroundColor: Colors.white,
+        selectedItemColor: DoctorCropColors.primary,
+        unselectedItemColor: DoctorCropColors.textMuted,
+        selectedLabelStyle: const TextStyle(
+          fontWeight: FontWeight.w700,
+          fontSize: 11.5,
         ),
-      ],
-    ),
-    child: BottomNavigationBar(
-      currentIndex: currentIndex,
-      onTap: onTap,
-      type: BottomNavigationBarType.fixed,
-      backgroundColor: Colors.black54,
-      selectedItemColor: Colors.greenAccent.shade200,
-      unselectedItemColor: Colors.grey,
-      selectedLabelStyle: const TextStyle(
-        fontWeight: FontWeight.w700,
-        fontSize: 11.5,
+        unselectedLabelStyle: const TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w500,
+        ),
+        elevation: 0,
+        items: items,
       ),
-      unselectedLabelStyle: const TextStyle(
-        fontSize: 11,
-        fontWeight: FontWeight.w400,
-      ),
-      elevation: 0,
-      items: items,
     ),
   );
 }
@@ -117,51 +97,60 @@ Widget _sharedBottomNav({
 Widget _noStoreView(BuildContext context, String pageName) {
   return Center(
     child: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 36),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: _orange.withOpacity(0.08),
-              shape: BoxShape.circle,
+      padding: const EdgeInsets.symmetric(horizontal: 32),
+      child: Container(
+        padding: const EdgeInsets.all(28),
+        decoration: DoctorCropTheme.cardDecoration(),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: DoctorCropColors.accentLight,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.storefront_outlined,
+                size: 34,
+                color: DoctorCropColors.accent,
+              ),
             ),
-            child: const Icon(
-              Icons.lock_outline_rounded,
-              size: 34,
-              color: _orange,
+            const SizedBox(height: 20),
+            Text(
+              "$pageName Unavailable",
+              style: const TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+                color: DoctorCropColors.textPrimary,
+                letterSpacing: -0.3,
+              ),
             ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            "$pageName Unavailable",
-            style: const TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w700,
-              color: _ink,
-              letterSpacing: -0.3,
+            const SizedBox(height: 8),
+            const Text(
+              "You currently do not have a verified agro store linked to this farmer account. Contact Doctor Crop support to register your agro-dealership.",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 13,
+                color: DoctorCropColors.textSecondary,
+                height: 1.45,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            "You don't have a store linked to your account.",
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 13,
-              color: Colors.grey.shade500,
-              height: 1.5,
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Return to Previous Screen"),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     ),
   );
 }
 
 // ─────────────────────────────────────────────────────────────
-//  SHARED: marketplace-style product card
+//  SHARED: Marketplace-style product card
 // ─────────────────────────────────────────────────────────────
 Widget _marketCard(
   BuildContext context,
@@ -171,11 +160,8 @@ Widget _marketCard(
   return GestureDetector(
     onTap: onTap,
     child: Container(
-      width: 180,
-      decoration: BoxDecoration(
-        color: _surface,
-        borderRadius: BorderRadius.circular(5),
-      ),
+      width: 185,
+      decoration: DoctorCropTheme.cardDecoration(radius: 14),
       clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -189,39 +175,40 @@ Widget _marketCard(
               if (prog == null) return child;
               return Container(
                 height: 130,
-                color: const Color(0xFFF0F0EC),
+                color: DoctorCropColors.surfaceMuted,
                 child: const Center(
-                  child: CircularProgressIndicator(strokeWidth: 2),
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
                 ),
               );
             },
             errorBuilder: (_, __, ___) => Container(
               height: 130,
-              color: const Color(0xFFF0F0EC),
+              color: DoctorCropColors.surfaceMuted,
               child: const Icon(
                 Icons.image_not_supported_outlined,
-                color: Color(0xFFCCCCCC),
+                color: DoctorCropColors.textMuted,
               ),
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(10, 9, 10, 10),
+            padding: const EdgeInsets.all(10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
                   decoration: BoxDecoration(
-                    color: _green.withOpacity(0.10),
-                    borderRadius: BorderRadius.circular(20),
+                    color: DoctorCropColors.primaryLight,
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     p.location,
                     style: const TextStyle(
-                      color: _green,
+                      color: DoctorCropColors.primary,
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
                     ),
@@ -233,18 +220,18 @@ Widget _marketCard(
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    color: _ink,
+                    color: DoctorCropColors.textPrimary,
                     fontWeight: FontWeight.w700,
                     fontSize: 13,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 3),
                 Text(
                   p.description,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    color: _sub,
+                    color: DoctorCropColors.textSecondary,
                     fontSize: 11,
                     height: 1.35,
                   ),
@@ -256,22 +243,22 @@ Widget _marketCard(
                     Text(
                       "${p.priceRwf} RWF",
                       style: const TextStyle(
-                        color: _orange,
-                        fontWeight: FontWeight.w700,
+                        color: DoctorCropColors.accent,
+                        fontWeight: FontWeight.w800,
                         fontSize: 12.5,
                       ),
                     ),
                     Container(
-                      width: 28,
-                      height: 28,
+                      width: 26,
+                      height: 26,
                       decoration: BoxDecoration(
-                        color: _green,
-                        borderRadius: BorderRadius.circular(28),
+                        color: DoctorCropColors.primaryLight,
+                        borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Icon(
                         Icons.arrow_forward_rounded,
-                        color: Colors.white,
-                        size: 15,
+                        color: DoctorCropColors.primary,
+                        size: 14,
                       ),
                     ),
                   ],
@@ -301,7 +288,7 @@ const List<String> _kCats = [
 
 Widget _catChips(String selected, ValueChanged<String> onSelect) {
   return SizedBox(
-    height: 33,
+    height: 36,
     child: ListView.builder(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -314,19 +301,22 @@ Widget _catChips(String selected, ValueChanged<String> onSelect) {
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
             margin: const EdgeInsets.only(right: 8),
-            padding: const EdgeInsets.symmetric(horizontal: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 12),
             decoration: BoxDecoration(
-              color: sel ? _green : Colors.white,
+              color: sel ? DoctorCropColors.primary : Colors.white,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: sel ? _green : const Color(0xFFE2E2E0)),
+              border: Border.all(
+                color: sel ? DoctorCropColors.primary : DoctorCropColors.border,
+                width: 0.9,
+              ),
             ),
             alignment: Alignment.center,
             child: Text(
               cat,
               style: TextStyle(
-                color: sel ? Colors.white : const Color(0xFF444444),
+                color: sel ? Colors.white : DoctorCropColors.textSecondary,
                 fontSize: 11.5,
-                fontWeight: FontWeight.w500,
+                fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
               ),
             ),
           ),
@@ -345,17 +335,8 @@ class StoreInfoPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: _buildAppBar(
-        context,
-        "Store Info",
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.more_vert, color: _ink),
-            onPressed: () {},
-          ),
-        ],
-      ),
+      backgroundColor: DoctorCropColors.background,
+      appBar: _buildAppBar(context, "Store Information"),
       body: ValueListenableBuilder<StoreSession?>(
         valueListenable: storeSessionNotifier,
         builder: (context, store, _) {
@@ -372,44 +353,41 @@ class StoreInfoPage extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        // ── Header banner — soft warm tint ────────────────────
+        // Header banner
         Container(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            // warm off-white with a green left accent stripe feel
-            gradient: const LinearGradient(
-              colors: [Color(0xFFF0FAF5), Color(0xFFFFF8F3)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+            color: Colors.white,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: _green.withOpacity(0.18)),
+            border: Border.all(color: DoctorCropColors.border),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
           ),
           child: Row(
             children: [
-              // Store icon with green ring
               Container(
-                width: 58,
-                height: 58,
+                width: 54,
+                height: 54,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: DoctorCropColors.primaryLight,
                   shape: BoxShape.circle,
-                  border: Border.all(color: _green.withOpacity(0.35), width: 2),
-                  boxShadow: [
-                    BoxShadow(
-                      color: _green.withOpacity(0.12),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
+                  border: Border.all(
+                    color: DoctorCropColors.primary.withOpacity(0.35),
+                    width: 2,
+                  ),
                 ),
                 child: const Icon(
-                  Icons.storefront_outlined,
-                  color: _green,
-                  size: 28,
+                  Icons.storefront_rounded,
+                  color: DoctorCropColors.primary,
+                  size: 26,
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -420,8 +398,8 @@ class StoreInfoPage extends StatelessWidget {
                           child: Text(
                             store.storeName,
                             style: const TextStyle(
-                              color: _ink,
-                              fontSize: 15,
+                              color: DoctorCropColors.textPrimary,
+                              fontSize: 16,
                               fontWeight: FontWeight.w800,
                               letterSpacing: -0.2,
                             ),
@@ -433,22 +411,22 @@ class StoreInfoPage extends StatelessWidget {
                             vertical: 3,
                           ),
                           decoration: BoxDecoration(
-                            color: _green.withOpacity(0.12),
+                            color: DoctorCropColors.primaryLight,
                             borderRadius: BorderRadius.circular(20),
                           ),
-                          child: Row(
+                          child: const Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(
-                                Icons.verified,
-                                color: _green,
-                                size: 11,
+                              Icon(
+                                Icons.verified_rounded,
+                                color: DoctorCropColors.primary,
+                                size: 12,
                               ),
-                              const SizedBox(width: 3),
-                              const Text(
+                              SizedBox(width: 3),
+                              Text(
                                 "Verified",
                                 style: TextStyle(
-                                  color: _green,
+                                  color: DoctorCropColors.primary,
                                   fontSize: 10,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -458,13 +436,12 @@ class StoreInfoPage extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 5),
-                    Text(
-                      "Your store is active and visible to buyers.",
+                    const SizedBox(height: 4),
+                    const Text(
+                      "Store is live and visible to registered farmers across Rwanda.",
                       style: TextStyle(
-                        color: Colors.grey.shade600,
+                        color: DoctorCropColors.textSecondary,
                         fontSize: 11.5,
-                        height: 1.4,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -473,10 +450,14 @@ class StoreInfoPage extends StatelessWidget {
                         _pill(
                           Icons.location_on_outlined,
                           store.storeLocation,
-                          _orange,
+                          DoctorCropColors.accent,
                         ),
                         const SizedBox(width: 6),
-                        _pill(Icons.phone_outlined, store.storePhone, _green),
+                        _pill(
+                          Icons.phone_outlined,
+                          store.storePhone,
+                          DoctorCropColors.primary,
+                        ),
                       ],
                     ),
                   ],
@@ -488,46 +469,35 @@ class StoreInfoPage extends StatelessWidget {
 
         const SizedBox(height: 16),
 
-        // ── Business Chart ────────────────────────────────────
+        // Business Performance Chart
         Container(
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: _border),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
+          decoration: DoctorCropTheme.cardDecoration(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Expanded(
+                  const Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          "PERFORMANCE",
+                        Text(
+                          "STORE REVENUE PERFORMANCE",
                           style: TextStyle(
-                            color: _sub,
+                            color: DoctorCropColors.textMuted,
                             fontSize: 10.5,
                             fontWeight: FontWeight.w700,
-                            letterSpacing: 1.0,
+                            letterSpacing: 0.8,
                           ),
                         ),
-                        const SizedBox(height: 2),
-                        const Text(
-                          "5-month history + 3-month forecast",
+                        SizedBox(height: 2),
+                        Text(
+                          "5-Month Actuals + 3-Month Projection",
                           style: TextStyle(
-                            color: _ink,
+                            color: DoctorCropColors.textPrimary,
                             fontSize: 12,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ],
@@ -535,9 +505,9 @@ class StoreInfoPage extends StatelessWidget {
                   ),
                   Row(
                     children: [
-                      _legendDot(_green, "Actual"),
+                      _legendDot(DoctorCropColors.primary, "Actual"),
                       const SizedBox(width: 10),
-                      _legendDot(_orange, "Forecast"),
+                      _legendDot(DoctorCropColors.accent, "Forecast"),
                     ],
                   ),
                 ],
@@ -550,46 +520,45 @@ class StoreInfoPage extends StatelessWidget {
 
         const SizedBox(height: 16),
 
-        // ── Info list ─────────────────────────────────────────
+        // Info List
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: _border),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
+          decoration: DoctorCropTheme.cardDecoration(),
           child: Column(
             children: [
-              _row(Icons.store_outlined, "Store Name", store.storeName, _green),
+              _row(
+                Icons.store_outlined,
+                "Store Name",
+                store.storeName,
+                DoctorCropColors.primary,
+              ),
               _div(),
-              _row(Icons.phone_outlined, "Phone", store.storePhone, _green),
+              _row(
+                Icons.phone_outlined,
+                "Official Phone",
+                store.storePhone,
+                DoctorCropColors.primary,
+              ),
               _div(),
               _row(
                 Icons.location_on_outlined,
-                "Location",
+                "Location / Region",
                 store.storeLocation,
-                _orange,
+                DoctorCropColors.accent,
               ),
               _div(),
               _row(
-                Icons.inventory_outlined,
-                "Total Products",
+                Icons.inventory_2_outlined,
+                "Catalogued Products",
                 "${store.products.length} items",
-                _green,
+                DoctorCropColors.primary,
               ),
               _div(),
               _row(
                 Icons.payments_outlined,
-                "Total Value",
-                "${_fmt(total.toDouble())} Rwf",
-                _orange,
+                "Total Inventory Valuation",
+                "${_fmt(total.toDouble())} RWF",
+                DoctorCropColors.accent,
               ),
             ],
           ),
@@ -603,7 +572,7 @@ class StoreInfoPage extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
         color: color.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -662,15 +631,18 @@ class StoreInfoPage extends StatelessWidget {
           const SizedBox(width: 12),
           Text(
             label,
-            style: const TextStyle(color: Color(0xFF888888), fontSize: 12.5),
+            style: const TextStyle(
+              color: DoctorCropColors.textSecondary,
+              fontSize: 12.5,
+            ),
           ),
           const Spacer(),
           Text(
             value,
             style: const TextStyle(
-              color: _ink,
+              color: DoctorCropColors.textPrimary,
               fontSize: 13,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],
@@ -678,17 +650,17 @@ class StoreInfoPage extends StatelessWidget {
     );
   }
 
-  Widget _div() => const Divider(height: 1, color: Color(0xFFF5F5F3));
+  Widget _div() => const Divider(height: 1, color: DoctorCropColors.borderLight);
 
   String _fmt(double v) {
-    if (v >= 1_000_000) return "${(v / 1_000_000).toStringAsFixed(1)}M";
-    if (v >= 1_000) return "${(v / 1_000).toStringAsFixed(0)}K";
+    if (v >= 1000000) return "${(v / 1000000).toStringAsFixed(1)}M";
+    if (v >= 1000) return "${(v / 1000).toStringAsFixed(0)}K";
     return v.toStringAsFixed(0);
   }
 }
 
 // ─────────────────────────────────────────────────────────────
-//  PERFORMANCE CHART
+//  PERFORMANCE CHART PAINTER
 // ─────────────────────────────────────────────────────────────
 class _PerformanceChart extends StatelessWidget {
   @override
@@ -717,11 +689,10 @@ class _ChartPainter extends CustomPainter {
     final h = size.height - pT - pB;
     final maxV = vals.reduce(max) * 1.15;
     const gridN = 4;
-    const lStyle = TextStyle(color: _sub, fontSize: 8);
+    const lStyle = TextStyle(color: DoctorCropColors.textMuted, fontSize: 8.5);
 
-    // Grid
     final gp = Paint()
-      ..color = _border
+      ..color = DoctorCropColors.borderLight
       ..strokeWidth = 0.8;
     for (int i = 0; i <= gridN; i++) {
       final y = pT + h - h * i / gridN;
@@ -733,7 +704,6 @@ class _ChartPainter extends CustomPainter {
       tp.paint(canvas, Offset(0, y - tp.height / 2));
     }
 
-    // X labels
     final xS = w / (vals.length - 1);
     for (int i = 0; i < vals.length; i++) {
       final tp = TextPainter(
@@ -743,7 +713,6 @@ class _ChartPainter extends CustomPainter {
       tp.paint(canvas, Offset(pL + i * xS - tp.width / 2, pT + h + 6));
     }
 
-    // Points
     final pts = [
       for (int i = 0; i < vals.length; i++)
         Offset(pL + i * xS, pT + h - h * vals[i] / maxV),
@@ -751,7 +720,7 @@ class _ChartPainter extends CustomPainter {
 
     // Solid line
     final sp = Paint()
-      ..color = _green
+      ..color = DoctorCropColors.primary
       ..strokeWidth = 2.2
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
@@ -778,14 +747,17 @@ class _ChartPainter extends CustomPainter {
         ..shader = LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [_green.withOpacity(0.18), _green.withOpacity(0.01)],
+          colors: [
+            DoctorCropColors.primary.withOpacity(0.18),
+            DoctorCropColors.primary.withOpacity(0.01),
+          ],
         ).createShader(Rect.fromLTWH(0, pT, size.width, h))
         ..style = PaintingStyle.fill,
     );
 
-    // Dotted forecast
+    // Dotted forecast line
     final dp = Paint()
-      ..color = _orange
+      ..color = DoctorCropColors.accent
       ..strokeWidth = 2
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
@@ -795,7 +767,7 @@ class _ChartPainter extends CustomPainter {
 
     // Dots solid
     for (int i = 0; i < solid; i++) {
-      canvas.drawCircle(pts[i], 3.5, Paint()..color = _green);
+      canvas.drawCircle(pts[i], 3.5, Paint()..color = DoctorCropColors.primary);
       canvas.drawCircle(
         pts[i],
         3.5,
@@ -807,7 +779,7 @@ class _ChartPainter extends CustomPainter {
     }
     // Dots forecast
     for (int i = solid; i < pts.length; i++) {
-      canvas.drawCircle(pts[i], 3.5, Paint()..color = _orange);
+      canvas.drawCircle(pts[i], 3.5, Paint()..color = DoctorCropColors.accent);
       canvas.drawCircle(
         pts[i],
         3.5,
@@ -880,26 +852,17 @@ class _StoreHomePageState extends State<StoreHomePage> {
   }
 
   static const _titles = [
-    "Your Products",
-    "Popular Items",
-    "Special Offers",
-    "More Products",
+    "Your Catalogued Products",
+    "Popular Treatments",
+    "Seasonal Demand Items",
+    "More Store Products",
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: _buildAppBar(
-        context,
-        "Store Home",
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.more_vert, color: _ink),
-            onPressed: () {},
-          ),
-        ],
-      ),
+      backgroundColor: DoctorCropColors.background,
+      appBar: _buildAppBar(context, "Store Home"),
       body: ValueListenableBuilder<StoreSession?>(
         valueListenable: storeSessionNotifier,
         builder: (context, store, _) {
@@ -911,32 +874,37 @@ class _StoreHomePageState extends State<StoreHomePage> {
             slivers: [
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
                   child: Container(
                     height: 44,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF5F5F3),
+                      color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: const Color(0xFFE5E5E0),
-                        width: 0.8,
+                        color: DoctorCropColors.border,
+                        width: 0.9,
                       ),
                     ),
                     child: TextField(
-                      onChanged: (v) => setState(() => _search = v),
-                      style: const TextStyle(fontSize: 13.5, color: _ink),
+                      onChanged: (v) => setState(() => _search = v.trim()),
+                      style: const TextStyle(
+                        fontSize: 13.5,
+                        color: DoctorCropColors.textPrimary,
+                      ),
                       decoration: const InputDecoration(
                         prefixIcon: Icon(
                           Icons.search_rounded,
-                          color: Color(0xFF999999),
+                          color: DoctorCropColors.textMuted,
                           size: 20,
                         ),
-                        hintText: "Search products...",
+                        hintText: "Search store inventory...",
                         hintStyle: TextStyle(
-                          color: Color(0xFFAAAAAA),
+                          color: DoctorCropColors.textMuted,
                           fontSize: 13,
                         ),
                         border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
                         contentPadding: EdgeInsets.symmetric(vertical: 13),
                       ),
                     ),
@@ -949,15 +917,17 @@ class _StoreHomePageState extends State<StoreHomePage> {
                   child: _catChips(_cat, (c) => setState(() => _cat = c)),
                 ),
               ),
-              SliverToBoxAdapter(child: Container(height: 0.8, color: _border)),
               if (filtered.isEmpty)
                 const SliverToBoxAdapter(
                   child: Padding(
                     padding: EdgeInsets.only(top: 60),
                     child: Center(
                       child: Text(
-                        "No products found",
-                        style: TextStyle(color: _sub, fontSize: 13),
+                        "No products found matching criteria",
+                        style: TextStyle(
+                          color: DoctorCropColors.textMuted,
+                          fontSize: 13,
+                        ),
                       ),
                     ),
                   ),
@@ -981,9 +951,16 @@ class _StoreHomePageState extends State<StoreHomePage> {
         builder: (_, store, __) {
           if (store == null) return const SizedBox();
           return FloatingActionButton.extended(
-            onPressed: () {},
-            backgroundColor: _green,
-            icon: const Icon(Icons.add, color: Colors.white),
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("Add product feature: connect camera or scanner"),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
+            backgroundColor: DoctorCropColors.primary,
+            icon: const Icon(Icons.add_rounded, color: Colors.white),
             label: const Text(
               "Add Product",
               style: TextStyle(
@@ -1005,15 +982,15 @@ class _StoreHomePageState extends State<StoreHomePage> {
         Text(
           t,
           style: const TextStyle(
-            color: _ink,
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
+            color: DoctorCropColors.textPrimary,
+            fontSize: 14.5,
+            fontWeight: FontWeight.w800,
           ),
         ),
-        Text(
+        const Text(
           "See all",
-          style: const TextStyle(
-            color: _green,
+          style: TextStyle(
+            color: DoctorCropColors.primary,
             fontSize: 12,
             fontWeight: FontWeight.w600,
           ),
@@ -1023,7 +1000,7 @@ class _StoreHomePageState extends State<StoreHomePage> {
   );
 
   Widget _row(BuildContext context, List<StoreProduct> items) => SizedBox(
-    height: 280,
+    height: 275,
     child: ListView.separated(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       scrollDirection: Axis.horizontal,
@@ -1055,17 +1032,8 @@ class StoreProductDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: _buildAppBar(
-        context,
-        product.productName,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.more_vert, color: _ink),
-            onPressed: () {},
-          ),
-        ],
-      ),
+      backgroundColor: DoctorCropColors.background,
+      appBar: _buildAppBar(context, product.productName),
       body: ListView(
         children: [
           Stack(
@@ -1076,7 +1044,7 @@ class StoreProductDetailPage extends StatelessWidget {
                 height: 220,
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) =>
-                    Container(height: 220, color: const Color(0xFFF0F0EC)),
+                    Container(height: 220, color: DoctorCropColors.surfaceMuted),
               ),
               Container(
                 height: 220,
@@ -1092,9 +1060,9 @@ class StoreProductDetailPage extends StatelessWidget {
                 ),
               ),
               Positioned(
-                top: 16,
-                right: 16,
-                child: _badge("${product.priceRwf} Rwf", _orange),
+                top: 14,
+                right: 14,
+                child: _badge("${product.priceRwf} RWF", DoctorCropColors.accent),
               ),
               Positioned(
                 bottom: 16,
@@ -1104,7 +1072,7 @@ class StoreProductDetailPage extends StatelessWidget {
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
@@ -1120,12 +1088,12 @@ class StoreProductDetailPage extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        "DESCRIPTION",
+                        "PRODUCT DESCRIPTION",
                         style: TextStyle(
-                          color: _sub,
+                          color: DoctorCropColors.textMuted,
                           fontSize: 10.5,
                           fontWeight: FontWeight.w700,
-                          letterSpacing: 1.0,
+                          letterSpacing: 0.8,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -1133,7 +1101,7 @@ class StoreProductDetailPage extends StatelessWidget {
                         product.description,
                         style: const TextStyle(
                           fontSize: 13.5,
-                          color: Color(0xFF333333),
+                          color: DoctorCropColors.textSecondary,
                           height: 1.5,
                         ),
                       ),
@@ -1146,23 +1114,23 @@ class StoreProductDetailPage extends StatelessWidget {
                     children: [
                       _dr(
                         Icons.payments_outlined,
-                        "Price",
-                        "${product.priceRwf} Rwf",
-                        _orange,
+                        "Retail Price",
+                        "${product.priceRwf} RWF",
+                        DoctorCropColors.accent,
                       ),
                       const Divider(height: 18),
                       _dr(
                         Icons.location_on_outlined,
-                        "Location",
+                        "Designated Store",
                         product.location,
-                        _green,
+                        DoctorCropColors.primary,
                       ),
                       const Divider(height: 18),
                       _dr(
                         Icons.calendar_today_outlined,
-                        "Added",
+                        "Registered Date",
                         "${product.createdAt.day}/${product.createdAt.month}/${product.createdAt.year}",
-                        _sub,
+                        DoctorCropColors.textMuted,
                       ),
                     ],
                   ),
@@ -1171,24 +1139,28 @@ class StoreProductDetailPage extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2563EB).withOpacity(0.07),
+                    color: DoctorCropColors.info.withOpacity(0.08),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                      color: const Color(0xFF2563EB).withOpacity(0.15),
+                      color: DoctorCropColors.info.withOpacity(0.2),
                     ),
                   ),
                   child: const Row(
                     children: [
                       Icon(
                         Icons.auto_awesome_rounded,
-                        color: Color(0xFF2563EB),
+                        color: DoctorCropColors.info,
                         size: 20,
                       ),
                       SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          "Genome AI can explain this product's usage, risks, storage, and market value.",
-                          style: TextStyle(fontSize: 12.5, height: 1.4),
+                          "Genome AI can assist with dosage, dilution ratios, shelf storage, and active ingredients.",
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            height: 1.4,
+                            color: DoctorCropColors.textSecondary,
+                          ),
                         ),
                       ),
                     ],
@@ -1200,33 +1172,43 @@ class StoreProductDetailPage extends StatelessWidget {
         ],
       ),
       bottomNavigationBar: Container(
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 20),
         color: Colors.white,
         child: Row(
           children: [
             Expanded(
               child: ElevatedButton.icon(
-                onPressed: () {},
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("Editing product details"),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                },
                 icon: const Icon(Icons.edit_outlined, size: 18),
                 label: const Text("Edit Product"),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _green,
-                  foregroundColor: Colors.white,
+                  backgroundColor: DoctorCropColors.primary,
                   minimumSize: const Size(double.infinity, 48),
-                  textStyle: const TextStyle(fontWeight: FontWeight.w700),
                 ),
               ),
             ),
             const SizedBox(width: 10),
             ElevatedButton.icon(
-              onPressed: () {},
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const StoreRecordingPage(),
+                  ),
+                );
+              },
               icon: const Icon(Icons.shopping_cart_checkout, size: 18),
               label: const Text("Record Sale"),
               style: ElevatedButton.styleFrom(
-                backgroundColor: _orange,
-                foregroundColor: Colors.white,
+                backgroundColor: DoctorCropColors.accent,
                 minimumSize: const Size(130, 48),
-                textStyle: const TextStyle(fontWeight: FontWeight.w700),
               ),
             ),
           ],
@@ -1237,44 +1219,36 @@ class StoreProductDetailPage extends StatelessWidget {
 
   Widget _card(Widget child) => Container(
     padding: const EdgeInsets.all(14),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(14),
-      border: Border.all(color: _border),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.04),
-          blurRadius: 10,
-          offset: const Offset(0, 3),
-        ),
-      ],
-    ),
+    decoration: DoctorCropTheme.cardDecoration(),
     child: child,
   );
 
   Widget _dr(IconData icon, String label, String value, Color c) => Row(
     children: [
       Container(
-        width: 30,
-        height: 30,
+        width: 32,
+        height: 32,
         decoration: BoxDecoration(
           color: c.withOpacity(0.10),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Icon(icon, size: 15, color: c),
+        child: Icon(icon, size: 16, color: c),
       ),
       const SizedBox(width: 10),
       Text(
         label,
-        style: const TextStyle(color: Color(0xFFAAAAAA), fontSize: 12.5),
+        style: const TextStyle(
+          color: DoctorCropColors.textSecondary,
+          fontSize: 12.5,
+        ),
       ),
       const Spacer(),
       Text(
         value,
         style: const TextStyle(
-          color: _ink,
+          color: DoctorCropColors.textPrimary,
           fontSize: 13,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w700,
         ),
       ),
     ],
@@ -1298,7 +1272,7 @@ class StoreProductDetailPage extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  STORE RECORDING PAGE  — modern green/orange
+//  STORE RECORDING PAGE
 // ═══════════════════════════════════════════════════════════════
 class StoreRecordingPage extends StatefulWidget {
   const StoreRecordingPage({super.key});
@@ -1312,17 +1286,8 @@ class _StoreRecordingPageState extends State<StoreRecordingPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAF9),
-      appBar: _buildAppBar(
-        context,
-        "Store Recording",
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.more_vert, color: _ink),
-            onPressed: () => _menu(context),
-          ),
-        ],
-      ),
+      backgroundColor: DoctorCropColors.background,
+      appBar: _buildAppBar(context, "Record Store Sale"),
       body: ValueListenableBuilder<StoreSession?>(
         valueListenable: storeSessionNotifier,
         builder: (context, store, _) {
@@ -1354,54 +1319,8 @@ class _StoreRecordingPageState extends State<StoreRecordingPage> {
       ),
     );
   }
-
-  void _menu(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (_) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _tile(context, Icons.download_outlined, "Export Records", _green),
-            _tile(context, Icons.filter_list, "Filter by Date", _orange),
-            _tile(context, Icons.print_outlined, "Print Report", _ink),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _tile(BuildContext ctx, IconData icon, String label, Color color) =>
-      ListTile(
-        leading: Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.10),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(icon, color: color, size: 18),
-        ),
-        title: Text(
-          label,
-          style: const TextStyle(
-            fontSize: 14,
-            color: _ink,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        onTap: () => Navigator.pop(ctx),
-      );
 }
 
-// ─────────────────────────────────────────────────────────────
-//  Sale Form  — modern with green/orange
-// ─────────────────────────────────────────────────────────────
 class _SaleForm extends StatefulWidget {
   final String saleType;
   final List<StoreProduct> products;
@@ -1425,49 +1344,36 @@ class _SaleFormState extends State<_SaleForm> {
   @override
   Widget build(BuildContext context) {
     final isDebt = widget.saleType == "debt";
-    final accent = isDebt ? _orange : _green;
-    final accentL = isDebt
-        ? _orange.withOpacity(0.08)
-        : _green.withOpacity(0.08);
+    final accent = isDebt ? DoctorCropColors.accent : DoctorCropColors.primary;
 
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        // ── Top accent banner ────────────────────────────────
-        _sec("Select Product"),
+        _sec("1. Select Inventory Product"),
         _drop(),
-        const SizedBox(height: 10),
+        const SizedBox(height: 12),
         _field(
           _qty,
-          "Quantity",
+          "Quantity to Sell",
           Icons.numbers_rounded,
           accent,
           keyboard: TextInputType.number,
         ),
 
         const SizedBox(height: 20),
-        _sec("Customer Info"),
-        _field(_cust, "Customer name", Icons.person_outline, accent),
+        _sec("2. Customer Information"),
+        _field(_cust, "Farmer / Customer name", Icons.person_outline, accent),
         const SizedBox(height: 10),
         _field(
           _phone,
-          "Phone number",
+          "Customer phone number",
           Icons.phone_outlined,
           accent,
           keyboard: TextInputType.phone,
         ),
-        if (isDebt) ...[
-          const SizedBox(height: 10),
-          _field(
-            TextEditingController(),
-            "Due date",
-            Icons.calendar_today_outlined,
-            accent,
-          ),
-        ],
 
         const SizedBox(height: 20),
-        _sec("Payment Method"),
+        _sec("3. Payment Method"),
         Wrap(
           spacing: 8,
           runSpacing: 8,
@@ -1485,22 +1391,13 @@ class _SaleFormState extends State<_SaleForm> {
                   color: sel ? accent : Colors.white,
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: sel ? accent : const Color(0xFFE5E5E0),
+                    color: sel ? accent : DoctorCropColors.border,
                   ),
-                  boxShadow: sel
-                      ? [
-                          BoxShadow(
-                            color: accent.withOpacity(0.25),
-                            blurRadius: 8,
-                            offset: const Offset(0, 3),
-                          ),
-                        ]
-                      : [],
                 ),
                 child: Text(
                   m,
                   style: TextStyle(
-                    color: sel ? Colors.white : const Color(0xFF555555),
+                    color: sel ? Colors.white : DoctorCropColors.textSecondary,
                     fontSize: 12.5,
                     fontWeight: FontWeight.w600,
                   ),
@@ -1511,34 +1408,36 @@ class _SaleFormState extends State<_SaleForm> {
         ),
 
         const SizedBox(height: 20),
-        _sec("Notes (optional)"),
+        _sec("4. Transaction Notes (Optional)"),
         Container(
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE5E5E0), width: 0.8),
+            border: Border.all(color: DoctorCropColors.border, width: 0.8),
           ),
           child: TextField(
             controller: _note,
-            maxLines: 3,
-            style: const TextStyle(fontSize: 13.5, color: _ink),
+            maxLines: 2,
+            style: const TextStyle(
+              fontSize: 13.5,
+              color: DoctorCropColors.textPrimary,
+            ),
             decoration: const InputDecoration(
-              hintText: "Add notes...",
-              hintStyle: TextStyle(color: Color(0xFFAAAAAA), fontSize: 13),
+              hintText: "Add specific instructions, harvest notes, or payment terms...",
               border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
               contentPadding: EdgeInsets.all(14),
             ),
           ),
         ),
 
         const SizedBox(height: 20),
-        // ── Total preview ─────────────────────────────────────
+
+        // Total Amount Calculation Card
         Container(
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.transparent,
-            borderRadius: BorderRadius.circular(14),
-          ),
+          decoration: DoctorCropTheme.cardDecoration(hasShadow: true),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -1546,10 +1445,10 @@ class _SaleFormState extends State<_SaleForm> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    "TOTAL AMOUNT",
+                    "TOTAL SALE REVENUE",
                     style: TextStyle(
-                      color: accent.withOpacity(0.65),
-                      fontSize: 10,
+                      color: accent,
+                      fontSize: 10.5,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.8,
                     ),
@@ -1558,9 +1457,9 @@ class _SaleFormState extends State<_SaleForm> {
                   ValueListenableBuilder<TextEditingValue>(
                     valueListenable: _qty,
                     builder: (_, __, ___) => Text(
-                      _total > 0 ? "$_total Rwf" : "— Rwf",
+                      _total > 0 ? "$_total RWF" : "0 RWF",
                       style: TextStyle(
-                        color: accent,
+                        color: DoctorCropColors.textPrimary,
                         fontSize: 22,
                         fontWeight: FontWeight.w900,
                         letterSpacing: -0.5,
@@ -1571,13 +1470,10 @@ class _SaleFormState extends State<_SaleForm> {
               ),
               if (_sel != null)
                 Container(
-                  padding: const EdgeInsets.all(10),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: DoctorCropColors.surfaceMuted,
                     borderRadius: BorderRadius.circular(10),
-                    boxShadow: [
-                      BoxShadow(color: accent.withOpacity(0.15), blurRadius: 8),
-                    ],
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
@@ -1587,12 +1483,15 @@ class _SaleFormState extends State<_SaleForm> {
                         style: TextStyle(
                           color: accent,
                           fontSize: 11,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                       Text(
                         _sel!.productName,
-                        style: const TextStyle(color: _sub, fontSize: 10),
+                        style: const TextStyle(
+                          color: DoctorCropColors.textMuted,
+                          fontSize: 10.5,
+                        ),
                       ),
                     ],
                   ),
@@ -1602,78 +1501,46 @@ class _SaleFormState extends State<_SaleForm> {
         ),
 
         const SizedBox(height: 20),
-        GestureDetector(
-          onTap: _saving
-              ? null
-              : () async {
-                  setState(() => _saving = true);
-                  await Future.delayed(const Duration(milliseconds: 900));
-                  setState(() => _saving = false);
-                  if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        isDebt ? "Debt sale recorded!" : "Sale recorded!",
-                      ),
-                      backgroundColor: accent,
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                  );
-                },
-          child: Container(
-            height: 52,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [accent, accent.withOpacity(0.80)],
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-              ),
-              borderRadius: BorderRadius.circular(14),
-              boxShadow: [
-                BoxShadow(
-                  color: accent.withOpacity(0.35),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            alignment: Alignment.center,
-            child: _saving
-                ? const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2.5,
-                    ),
-                  )
-                : Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        isDebt
-                            ? Icons.hourglass_bottom_rounded
-                            : Icons.check_circle_outline,
-                        color: Colors.white,
-                        size: 18,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        isDebt ? "Record Debt Sale" : "Record Direct Sale",
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
+        SizedBox(
+          height: 50,
+          child: ElevatedButton.icon(
+            onPressed: _saving
+                ? null
+                : () async {
+                    setState(() => _saving = true);
+                    await Future.delayed(const Duration(milliseconds: 600));
+                    setState(() => _saving = false);
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          isDebt ? "Debt sale recorded in store ledger!" : "Sale recorded successfully!",
                         ),
+                        backgroundColor: accent,
+                        behavior: SnackBarBehavior.floating,
                       ),
-                    ],
-                  ),
+                    );
+                  },
+            icon: Icon(
+              isDebt
+                  ? Icons.hourglass_bottom_rounded
+                  : Icons.check_circle_outline,
+              size: 18,
+            ),
+            label: Text(
+              _saving
+                  ? "Recording..."
+                  : isDebt
+                      ? "Record Debt Sale"
+                      : "Confirm & Record Direct Sale",
+              style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: accent,
+            ),
           ),
         ),
-        const SizedBox(height: 30),
+        const SizedBox(height: 24),
       ],
     );
   }
@@ -1682,15 +1549,15 @@ class _SaleFormState extends State<_SaleForm> {
     decoration: BoxDecoration(
       color: Colors.white,
       borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: const Color(0xFFE5E5E0), width: 0.8),
+      border: Border.all(color: DoctorCropColors.border, width: 0.8),
     ),
     padding: const EdgeInsets.symmetric(horizontal: 14),
     child: DropdownButtonHideUnderline(
       child: DropdownButton<StoreProduct>(
         value: _sel,
         hint: const Text(
-          "Choose a product",
-          style: TextStyle(color: Color(0xFFAAAAAA), fontSize: 13),
+          "Choose a product from store inventory",
+          style: TextStyle(color: DoctorCropColors.textMuted, fontSize: 13),
         ),
         isExpanded: true,
         items: widget.products
@@ -1698,8 +1565,11 @@ class _SaleFormState extends State<_SaleForm> {
               (p) => DropdownMenuItem(
                 value: p,
                 child: Text(
-                  "${p.productName}  •  ${p.priceRwf} Rwf",
-                  style: const TextStyle(fontSize: 13, color: _ink),
+                  "${p.productName}  •  ${p.priceRwf} RWF",
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: DoctorCropColors.textPrimary,
+                  ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -1711,14 +1581,14 @@ class _SaleFormState extends State<_SaleForm> {
   );
 
   Widget _sec(String label) => Padding(
-    padding: const EdgeInsets.only(bottom: 10),
+    padding: const EdgeInsets.only(bottom: 8),
     child: Text(
       label.toUpperCase(),
       style: const TextStyle(
-        color: Color(0xFFAAAAAA),
-        fontSize: 10.5,
+        color: DoctorCropColors.textMuted,
+        fontSize: 11,
         fontWeight: FontWeight.w700,
-        letterSpacing: 1.0,
+        letterSpacing: 0.8,
       ),
     ),
   );
@@ -1733,27 +1603,26 @@ class _SaleFormState extends State<_SaleForm> {
     decoration: BoxDecoration(
       color: Colors.white,
       borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: const Color(0xFFE5E5E0), width: 0.8),
+      border: Border.all(color: DoctorCropColors.border, width: 0.8),
     ),
     child: TextField(
       controller: ctrl,
       keyboardType: keyboard,
-      style: const TextStyle(fontSize: 13.5, color: _ink),
+      style: const TextStyle(
+        fontSize: 13.5,
+        color: DoctorCropColors.textPrimary,
+      ),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: const TextStyle(color: Color(0xFFAAAAAA), fontSize: 13),
-        prefixIcon: Container(
-          margin: const EdgeInsets.all(10),
-          width: 32,
-          height: 32,
-          decoration: BoxDecoration(
-            color: accent.withOpacity(0.10),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(icon, size: 15, color: accent),
+        hintStyle: const TextStyle(
+          color: DoctorCropColors.textMuted,
+          fontSize: 13,
         ),
+        prefixIcon: Icon(icon, size: 18, color: accent),
         border: InputBorder.none,
-        contentPadding: const EdgeInsets.symmetric(vertical: 14),
+        enabledBorder: InputBorder.none,
+        focusedBorder: InputBorder.none,
+        contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
       ),
     ),
   );
@@ -1852,24 +1721,14 @@ class _StoreTransactionsPageState extends State<StoreTransactionsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: _buildAppBar(
-        context,
-        "Transactions",
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.more_vert, color: _ink),
-            onPressed: () => _menu(context),
-          ),
-        ],
-      ),
+      backgroundColor: DoctorCropColors.background,
+      appBar: _buildAppBar(context, "Ledger & Transactions"),
       body: ValueListenableBuilder<StoreSession?>(
         valueListenable: storeSessionNotifier,
         builder: (context, store, _) {
           if (store == null) return _noStoreView(context, "Transactions");
           return Column(
             children: [
-              // ── Search + Sort bar ─────────────────────────────
               Container(
                 color: Colors.white,
                 padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
@@ -1877,53 +1736,57 @@ class _StoreTransactionsPageState extends State<StoreTransactionsPage> {
                   children: [
                     Expanded(
                       child: Container(
-                        height: 40,
+                        height: 42,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF5F5F3),
+                          color: DoctorCropColors.surfaceMuted,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                            color: const Color(0xFFE5E5E0),
+                            color: DoctorCropColors.border,
                             width: 0.8,
                           ),
                         ),
                         child: TextField(
-                          onChanged: (v) => setState(() => _search = v),
-                          style: const TextStyle(fontSize: 13, color: _ink),
+                          onChanged: (v) => setState(() => _search = v.trim()),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: DoctorCropColors.textPrimary,
+                          ),
                           decoration: const InputDecoration(
                             prefixIcon: Icon(
                               Icons.search_rounded,
-                              color: _sub,
+                              color: DoctorCropColors.textMuted,
                               size: 18,
                             ),
-                            hintText: "Search...",
+                            hintText: "Search transaction or customer...",
                             hintStyle: TextStyle(
-                              color: Color(0xFFAAAAAA),
+                              color: DoctorCropColors.textMuted,
                               fontSize: 12.5,
                             ),
                             border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
                             contentPadding: EdgeInsets.symmetric(vertical: 12),
                           ),
                         ),
                       ),
                     ),
                     const SizedBox(width: 8),
-                    // Sort button
                     GestureDetector(
                       onTap: () => _sortSheet(context),
                       child: Container(
-                        height: 40,
-                        width: 40,
+                        height: 42,
+                        width: 42,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF5F5F3),
+                          color: DoctorCropColors.primaryLight,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                            color: const Color(0xFFE5E5E0),
+                            color: DoctorCropColors.primary.withOpacity(0.2),
                             width: 0.8,
                           ),
                         ),
                         child: const Icon(
                           Icons.sort_rounded,
-                          color: _ink,
+                          color: DoctorCropColors.primary,
                           size: 20,
                         ),
                       ),
@@ -1931,8 +1794,7 @@ class _StoreTransactionsPageState extends State<StoreTransactionsPage> {
                   ],
                 ),
               ),
-              Container(height: 0.8, color: _border),
-              // ── List ─────────────────────────────────────────
+              Container(height: 0.9, color: DoctorCropColors.border),
               Expanded(
                 child: IndexedStack(
                   index: _tab,
@@ -1948,13 +1810,13 @@ class _StoreTransactionsPageState extends State<StoreTransactionsPage> {
         onTap: (i) => setState(() => _tab = i),
         items: [
           BottomNavigationBarItem(
-            icon: const Icon(Icons.people_outline),
-            activeIcon: const Icon(Icons.people),
+            icon: const Icon(Icons.people_outline_rounded),
+            activeIcon: const Icon(Icons.people_rounded),
             label: "Customers (${_filteredCustomers().length})",
           ),
           BottomNavigationBarItem(
             icon: const Icon(Icons.receipt_long_outlined),
-            activeIcon: const Icon(Icons.receipt_long),
+            activeIcon: const Icon(Icons.receipt_long_rounded),
             label: "Sales (${_filteredSales().length})",
           ),
         ],
@@ -1966,39 +1828,38 @@ class _StoreTransactionsPageState extends State<StoreTransactionsPage> {
     final list = _filteredCustomers();
     if (list.isEmpty) {
       return const Center(
-        child: Text("No customers found", style: TextStyle(color: _sub)),
+        child: Text("No customers found", style: TextStyle(color: DoctorCropColors.textMuted)),
       );
     }
     return ListView.builder(
+      padding: const EdgeInsets.all(16),
       itemCount: list.length,
       itemBuilder: (_, i) {
         final c = list[i];
         final all = _sales.where((s) => s.customer == c.customer).toList();
         final total = all.fold<int>(0, (s, tx) => s + tx.amount);
         final hasDebt = all.any((s) => s.isDebt);
+
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-          decoration: BoxDecoration(
-            border: Border(bottom: BorderSide(color: _border, width: 0.8)),
-          ),
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.all(14),
+          decoration: DoctorCropTheme.cardDecoration(),
           child: Row(
             children: [
-              // Avatar
               Container(
-                width: 42,
-                height: 42,
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
-                  color: _green.withOpacity(0.10),
+                  color: DoctorCropColors.primaryLight,
                   shape: BoxShape.circle,
                 ),
-                child: Center(
-                  child: Text(
-                    c.customer[0],
-                    style: const TextStyle(
-                      color: _green,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
+                alignment: Alignment.center,
+                child: Text(
+                  c.customer.isNotEmpty ? c.customer[0] : "C",
+                  style: const TextStyle(
+                    color: DoctorCropColors.primary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
                   ),
                 ),
               ),
@@ -2010,17 +1871,17 @@ class _StoreTransactionsPageState extends State<StoreTransactionsPage> {
                     Text(
                       c.customer,
                       style: const TextStyle(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w600,
-                        color: _ink,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: DoctorCropColors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      "${all.length} purchase${all.length == 1 ? '' : 's'}",
+                      "${all.length} registered transaction${all.length == 1 ? '' : 's'}",
                       style: const TextStyle(
                         fontSize: 11.5,
-                        color: Color(0xFFAAAAAA),
+                        color: DoctorCropColors.textMuted,
                       ),
                     ),
                   ],
@@ -2030,14 +1891,14 @@ class _StoreTransactionsPageState extends State<StoreTransactionsPage> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    "$total Rwf",
+                    "$total RWF",
                     style: const TextStyle(
-                      fontSize: 13,
+                      fontSize: 13.5,
                       fontWeight: FontWeight.w800,
-                      color: _orange,
+                      color: DoctorCropColors.accent,
                     ),
                   ),
-                  const SizedBox(height: 3),
+                  const SizedBox(height: 4),
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 7,
@@ -2045,16 +1906,18 @@ class _StoreTransactionsPageState extends State<StoreTransactionsPage> {
                     ),
                     decoration: BoxDecoration(
                       color: hasDebt
-                          ? _orange.withOpacity(0.10)
-                          : _green.withOpacity(0.10),
+                          ? DoctorCropColors.accentLight
+                          : DoctorCropColors.primaryLight,
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                      hasDebt ? "Has debt" : "Cleared",
+                      hasDebt ? "Has active debt" : "Fully cleared",
                       style: TextStyle(
                         fontSize: 10,
-                        color: hasDebt ? _orange : _green,
-                        fontWeight: FontWeight.w600,
+                        color: hasDebt
+                            ? DoctorCropColors.accentDark
+                            : DoctorCropColors.primary,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
@@ -2071,35 +1934,36 @@ class _StoreTransactionsPageState extends State<StoreTransactionsPage> {
     final list = _filteredSales();
     if (list.isEmpty) {
       return const Center(
-        child: Text("No sales found", style: TextStyle(color: _sub)),
+        child: Text("No transactions recorded", style: TextStyle(color: DoctorCropColors.textMuted)),
       );
     }
     return ListView.builder(
+      padding: const EdgeInsets.all(16),
       itemCount: list.length,
       itemBuilder: (_, i) {
         final tx = list[i];
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-          decoration: BoxDecoration(
-            border: Border(bottom: BorderSide(color: _border, width: 0.8)),
-          ),
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.all(14),
+          decoration: DoctorCropTheme.cardDecoration(),
           child: Row(
             children: [
-              // Type indicator
               Container(
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
                   color: tx.isDebt
-                      ? _orange.withOpacity(0.10)
-                      : _green.withOpacity(0.10),
+                      ? DoctorCropColors.accentLight
+                      : DoctorCropColors.primaryLight,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
                   tx.isDebt
                       ? Icons.hourglass_bottom_rounded
-                      : Icons.check_circle_outline,
-                  color: tx.isDebt ? _orange : _green,
+                      : Icons.check_circle_outline_rounded,
+                  color: tx.isDebt
+                      ? DoctorCropColors.accent
+                      : DoctorCropColors.primary,
                   size: 20,
                 ),
               ),
@@ -2111,9 +1975,9 @@ class _StoreTransactionsPageState extends State<StoreTransactionsPage> {
                     Text(
                       tx.product,
                       style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: _ink,
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w700,
+                        color: DoctorCropColors.textPrimary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -2121,34 +1985,22 @@ class _StoreTransactionsPageState extends State<StoreTransactionsPage> {
                     const SizedBox(height: 3),
                     Row(
                       children: [
-                        const Icon(
-                          Icons.person_outline,
-                          size: 11,
-                          color: Color(0xFFAAAAAA),
-                        ),
-                        const SizedBox(width: 3),
                         Text(
                           tx.customer,
                           style: const TextStyle(
                             fontSize: 11.5,
-                            color: Color(0xFFAAAAAA),
+                            color: DoctorCropColors.textSecondary,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Container(
-                          width: 3,
-                          height: 3,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFCCCCCC),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 6),
+                        const Text("•", style: TextStyle(color: DoctorCropColors.textMuted)),
+                        const SizedBox(width: 6),
                         Text(
                           tx.method,
                           style: const TextStyle(
                             fontSize: 11,
-                            color: Color(0xFFBBBBBB),
+                            color: DoctorCropColors.textMuted,
                           ),
                         ),
                       ],
@@ -2160,11 +2012,11 @@ class _StoreTransactionsPageState extends State<StoreTransactionsPage> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    "${tx.amount} Rwf",
+                    "${tx.amount} RWF",
                     style: const TextStyle(
-                      fontSize: 13,
+                      fontSize: 13.5,
                       fontWeight: FontWeight.w800,
-                      color: _orange,
+                      color: DoctorCropColors.accent,
                     ),
                   ),
                   const SizedBox(height: 3),
@@ -2172,7 +2024,7 @@ class _StoreTransactionsPageState extends State<StoreTransactionsPage> {
                     _ago(tx.date),
                     style: const TextStyle(
                       fontSize: 10.5,
-                      color: Color(0xFFBBBBBB),
+                      color: DoctorCropColors.textMuted,
                     ),
                   ),
                 ],
@@ -2202,11 +2054,11 @@ class _StoreTransactionsPageState extends State<StoreTransactionsPage> {
                 child: Row(
                   children: [
                     const Text(
-                      "Sort by",
+                      "Sort Records",
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        color: _ink,
+                        color: DoctorCropColors.textPrimary,
                       ),
                     ),
                     const Spacer(),
@@ -2214,7 +2066,7 @@ class _StoreTransactionsPageState extends State<StoreTransactionsPage> {
                       onTap: () => Navigator.pop(ctx),
                       child: const Icon(
                         Icons.close_rounded,
-                        color: _sub,
+                        color: DoctorCropColors.textMuted,
                         size: 20,
                       ),
                     ),
@@ -2224,32 +2076,11 @@ class _StoreTransactionsPageState extends State<StoreTransactionsPage> {
               ..._sortOpts
                   .map(
                     (opt) => ListTile(
-                      leading: Container(
-                        width: 34,
-                        height: 34,
-                        decoration: BoxDecoration(
-                          color: _sort == opt
-                              ? _green.withOpacity(0.10)
-                              : const Color(0xFFF5F5F3),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Icon(
-                          opt == "Newest"
-                              ? Icons.arrow_downward_rounded
-                              : opt == "Oldest"
-                              ? Icons.arrow_upward_rounded
-                              : opt == "Highest"
-                              ? Icons.trending_up_rounded
-                              : Icons.trending_down_rounded,
-                          size: 17,
-                          color: _sort == opt ? _green : _sub,
-                        ),
-                      ),
                       title: Text(
                         opt,
                         style: TextStyle(
                           fontSize: 13.5,
-                          color: _ink,
+                          color: DoctorCropColors.textPrimary,
                           fontWeight: _sort == opt
                               ? FontWeight.w700
                               : FontWeight.w400,
@@ -2258,7 +2089,7 @@ class _StoreTransactionsPageState extends State<StoreTransactionsPage> {
                       trailing: _sort == opt
                           ? const Icon(
                               Icons.check_rounded,
-                              color: _green,
+                              color: DoctorCropColors.primary,
                               size: 18,
                             )
                           : null,
@@ -2275,57 +2106,6 @@ class _StoreTransactionsPageState extends State<StoreTransactionsPage> {
       ),
     );
   }
-
-  void _menu(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (_) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _menuTile(
-              context,
-              Icons.download_outlined,
-              "Export Transactions",
-              _green,
-            ),
-            _menuTile(context, Icons.print_outlined, "Print Report", _orange),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _menuTile(
-    BuildContext ctx,
-    IconData icon,
-    String label,
-    Color color,
-  ) => ListTile(
-    leading: Container(
-      width: 36,
-      height: 36,
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.10),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Icon(icon, color: color, size: 18),
-    ),
-    title: Text(
-      label,
-      style: const TextStyle(
-        fontSize: 14,
-        color: _ink,
-        fontWeight: FontWeight.w500,
-      ),
-    ),
-    onTap: () => Navigator.pop(ctx),
-  );
 
   String _ago(DateTime dt) {
     final d = DateTime.now().difference(dt);

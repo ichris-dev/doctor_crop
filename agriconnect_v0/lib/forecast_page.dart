@@ -1,12 +1,9 @@
+import 'package:agriconnect_v0/theme/app_theme.dart';
 import 'package:flutter/material.dart';
-import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-// ──────────────────────────────────────────────────────────────────────────────
-//  WeatherForecastPage
-// ──────────────────────────────────────────────────────────────────────────────
 class WeatherForecastPage extends StatefulWidget {
   const WeatherForecastPage({super.key});
 
@@ -15,37 +12,25 @@ class WeatherForecastPage extends StatefulWidget {
 }
 
 class _WeatherForecastPageState extends State<WeatherForecastPage> {
-  // ── Design tokens ────────────────────────────────────────────────────────
-  static const Color _ink = Color(0xFF111111);
-  static const Color _subText = Color(0xFF999999);
-  static const Color _surface = Color(0xFFFAFAF8);
-  static const Color _border = Color(0xFFEEEEEA);
-  static const Color _green = Color(0xFF40B37A);
-  static const Color _orange = Color(0xFFF97316);
-  static const Color _dark = Color(0xFF1A1A1A);
-
-  // Add these to your state variables
   Map<String, dynamic>? _liveWeather;
   bool _loadingWeather = true;
 
-  // Weather code → icon + label
   Map<String, dynamic> _decodeWeatherCode(int code) {
-    if (code == 0) return {"icon": Icons.wb_sunny_outlined, "label": "Clear"};
+    if (code == 0) return {"icon": Icons.wb_sunny_rounded, "label": "Clear Sky"};
     if (code <= 2)
-      return {"icon": Icons.wb_cloudy_outlined, "label": "Partly Cloudy"};
-    if (code <= 3) return {"icon": Icons.cloud_outlined, "label": "Overcast"};
-    if (code <= 49) return {"icon": Icons.foggy, "label": "Foggy"};
-    if (code <= 59) return {"icon": Icons.grain_outlined, "label": "Drizzle"};
-    if (code <= 69) return {"icon": Icons.grain_outlined, "label": "Rain"};
-    if (code <= 79) return {"icon": Icons.ac_unit_outlined, "label": "Snow"};
+      return {"icon": Icons.wb_cloudy_rounded, "label": "Partly Cloudy"};
+    if (code <= 3) return {"icon": Icons.cloud_rounded, "label": "Overcast"};
+    if (code <= 49) return {"icon": Icons.foggy, "label": "Morning Fog"};
+    if (code <= 59) return {"icon": Icons.grain_rounded, "label": "Light Drizzle"};
+    if (code <= 69) return {"icon": Icons.grain_rounded, "label": "Moderate Rain"};
+    if (code <= 79) return {"icon": Icons.ac_unit_rounded, "label": "Cold Dew / Snow"};
     if (code <= 82)
-      return {"icon": Icons.grain_outlined, "label": "Rain Showers"};
+      return {"icon": Icons.grain_rounded, "label": "Rain Showers"};
     if (code <= 99)
-      return {"icon": Icons.thunderstorm_outlined, "label": "Thunderstorm"};
-    return {"icon": Icons.cloud_outlined, "label": "Unknown"};
+      return {"icon": Icons.thunderstorm_rounded, "label": "Thunderstorm"};
+    return {"icon": Icons.cloud_rounded, "label": "Mild Weather"};
   }
 
-  // Call this in initState
   Future<void> fetchLiveWeather({
     double lat = -1.9441,
     double lon = 30.0619,
@@ -63,9 +48,10 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
             _loadingWeather = false;
           });
         }
+      } else {
+        setState(() => _loadingWeather = false);
       }
     } catch (e) {
-      print("Weather fetch error: $e");
       setState(() => _loadingWeather = false);
     }
   }
@@ -73,7 +59,6 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
   int _forecastTab = 0;
   final List<String> _tabs = ["Tomorrow", "Week", "Month", "Year"];
 
-  // ── Forecast data ────────────────────────────────────────────────────────
   final Map<int, List<_ForecastItem>> _forecastData = {
     0: [
       _ForecastItem("6 AM", Icons.wb_sunny_outlined, "Sunny", 22, 0),
@@ -121,7 +106,6 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
     3: [80, 70, 20, 90, 45, 10, 5, 8, 30, 75, 85, 65],
   };
 
-  // ── Map regions – orange for sunny, green for rain, grey for cloud ───────
   final List<_MapRegion> _regions = [
     _MapRegion(
       "Kigali",
@@ -129,7 +113,7 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
       0.46,
       Icons.wb_sunny_outlined,
       27,
-      Color(0xFFF97316),
+      DoctorCropColors.accent,
     ),
     _MapRegion(
       "Musanze",
@@ -137,7 +121,7 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
       0.22,
       Icons.grain_outlined,
       19,
-      Color(0xFF40B37A),
+      DoctorCropColors.primary,
     ),
     _MapRegion(
       "Rubavu",
@@ -145,16 +129,16 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
       0.33,
       Icons.thunderstorm_outlined,
       18,
-      Color(0xFF777777),
+      DoctorCropColors.textSecondary,
     ),
-    _MapRegion("Huye", 0.44, 0.75, Icons.cloud_outlined, 22, Color(0xFF777777)),
+    _MapRegion("Huye", 0.44, 0.75, Icons.cloud_outlined, 22, DoctorCropColors.textSecondary),
     _MapRegion(
       "Nyagatare",
       0.74,
       0.20,
       Icons.wb_sunny_outlined,
       29,
-      Color(0xFFF97316),
+      DoctorCropColors.accent,
     ),
     _MapRegion(
       "Rusizi",
@@ -162,7 +146,7 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
       0.70,
       Icons.grain_outlined,
       20,
-      Color(0xFF40B37A),
+      DoctorCropColors.primary,
     ),
     _MapRegion(
       "Rwamagana",
@@ -170,7 +154,7 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
       0.42,
       Icons.wb_sunny_outlined,
       26,
-      Color(0xFFF97316),
+      DoctorCropColors.accent,
     ),
     _MapRegion(
       "Muhanga",
@@ -178,64 +162,63 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
       0.54,
       Icons.cloud_outlined,
       23,
-      Color(0xFF777777),
+      DoctorCropColors.textSecondary,
     ),
   ];
 
-  // ── News (Unsplash agriculture images) ───────────────────────────────────
   final List<_NewsItem> _news = [
     _NewsItem(
       "Heavy Rains Expected in Northern Rwanda",
-      "Meteorologists warn of above-average rainfall in Musanze and Rubavu districts next week. Farmers advised to protect crops and harvest early.",
+      "Meteorologists warn of above-average rainfall in Musanze and Rubavu districts next week. Farmers advised to protect crops and ensure drainage channels are clear.",
       "2h ago",
       "Weather Alert",
-      Color(0xFFF97316),
+      DoctorCropColors.accent,
       "https://images.unsplash.com/photo-1534274988757-a28bf1a57c17?w=800",
     ),
     _NewsItem(
       "Rwanda Agricultural Season B Planting Guide 2025",
-      "MINAGRI releases updated guidelines for Season B. Maize and potato farmers in highland areas should prepare soil before the rains begin.",
+      "MINAGRI releases updated guidelines for Season B. Maize and potato farmers in highland areas should prepare soil and acquire certified seed supplies.",
       "5h ago",
-      "MINAGRI",
-      Color(0xFF40B37A),
+      "MINAGRI Update",
+      DoctorCropColors.primary,
       "https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=800",
     ),
     _NewsItem(
-      "El Niño Effect on East African Harvests",
-      "Climate scientists project a 15% reduction in sorghum and bean yields across East Africa due to irregular rainfall patterns.",
+      "Rainfall Patterns and East African Harvest Outlook",
+      "Regional climate projections suggest strategic early planting for sorghum and bean crops across highland provinces to optimize yield.",
       "1d ago",
-      "Climate",
-      Color(0xFF777777),
+      "Climate Report",
+      DoctorCropColors.info,
       "https://images.unsplash.com/photo-1523741543316-beb7fc7023d8?w=800",
     ),
     _NewsItem(
       "New Drought-Resistant Maize Varieties Released",
-      "Rwanda Agriculture Board introduces three new maize varieties suited to drier Eastern Province with up to 30% higher yield.",
+      "Rwanda Agriculture Board introduces three new resilient varieties suited to drier Eastern Province districts with up to 30% higher harvest yields.",
       "2d ago",
-      "RAB Update",
-      Color(0xFF40B37A),
+      "RAB Advisory",
+      DoctorCropColors.primary,
       "https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=800",
     ),
     _NewsItem(
       "Coffee Harvest Forecast: Record Output Expected",
-      "Favorable temperatures across volcanic highlands are expected to boost arabica coffee cherry yields by 18% vs last year.",
+      "Favorable volcanic soil conditions across western ranges are projected to boost Arabica cherry harvest volumes by 18% compared to the prior season.",
       "3d ago",
-      "Export Crops",
-      Color(0xFFF97316),
+      "Export Sector",
+      DoctorCropColors.accent,
       "https://images.unsplash.com/photo-1447933601403-0c6688de566e?w=800",
     ),
   ];
+
   @override
   void initState() {
     super.initState();
     fetchLiveWeather(lat: -1.4990, lon: 29.6340);
   }
 
-  // ────────────────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: DoctorCropColors.background,
       body: ListView(
         physics: const ClampingScrollPhysics(),
         children: [
@@ -245,15 +228,14 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
           _buildRwandaMap(),
           _buildPrecipChart(),
           _buildNewsSection(),
-          const SizedBox(height: 28),
+          const SizedBox(height: 32),
         ],
       ),
     );
   }
 
-  // ── TODAY CARD  (dark, no blue) ───────────────────────────────────────────
+  // ── TODAY WEATHER HERO CARD ───────────────────────────────────────────────
   Widget _buildTodayCard() {
-    // Use live data if available, fallback to static
     final temp = _liveWeather?["current"]?["temperature"]?.round() ?? 27;
     final humidity = _liveWeather?["current"]?["humidity"] ?? 68;
     final wind = _liveWeather?["current"]?["wind_speed"] ?? 14;
@@ -262,18 +244,32 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
     final weather = _decodeWeatherCode(code);
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+      padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: Colors.black54,
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF0F381E),
+            Color(0xFF1E5B33),
+          ],
+        ),
         borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: DoctorCropColors.primaryDark.withOpacity(0.25),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: _loadingWeather
           ? const SizedBox(
-              height: 140,
+              height: 130,
               child: Center(
                 child: CircularProgressIndicator(
-                  color: Colors.white54,
+                  color: Colors.white70,
                   strokeWidth: 2,
                 ),
               ),
@@ -284,68 +280,93 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Row(
-                      children: [
-                        Icon(
-                          Icons.location_on_outlined,
-                          color: Colors.white54,
-                          size: 13,
-                        ),
-                        SizedBox(width: 4),
-                        Text(
-                          "Kigali, Rwanda",
-                          style: TextStyle(color: Colors.white54, fontSize: 12),
-                        ),
-                      ],
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(
+                            Icons.location_on_rounded,
+                            color: Color(0xFF4ADE80),
+                            size: 13,
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            "Kigali, Rwanda",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     Text(
                       _todayDate(),
-                      style: const TextStyle(
-                        color: Colors.white38,
-                        fontSize: 11.5,
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.7),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 18),
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Text(
                       "$temp°",
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 66,
+                        fontSize: 64,
                         fontWeight: FontWeight.w200,
                         height: 1.0,
                       ),
                     ),
-                    const SizedBox(width: 14),
+                    const SizedBox(width: 16),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const SizedBox(height: 16),
                           Row(
                             children: [
-                              Icon(weather["icon"], color: _orange, size: 22),
-                              const SizedBox(width: 6),
-                              Text(
-                                weather["label"],
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w600,
+                              Icon(
+                                weather["icon"] as IconData,
+                                color: DoctorCropColors.accent,
+                                size: 24,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  weather["label"] as String,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                  ),
                                 ),
                               ),
                             ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            "Favorable agricultural conditions today",
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.65),
+                              fontSize: 11.5,
+                            ),
                           ),
                         ],
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 18),
+                const SizedBox(height: 20),
                 Row(
                   children: [
                     _statPill(
@@ -354,9 +375,9 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
                       "$humidity%",
                     ),
                     const SizedBox(width: 8),
-                    _statPill(Icons.air_outlined, "Wind", "$wind km/h"),
+                    _statPill(Icons.air_rounded, "Wind", "$wind km/h"),
                     const SizedBox(width: 8),
-                    _statPill(Icons.umbrella_outlined, "Rain", "$rainChance%"),
+                    _statPill(Icons.umbrella_outlined, "Rain Risk", "$rainChance%"),
                   ],
                 ),
               ],
@@ -369,18 +390,18 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.07),
+          color: Colors.white.withOpacity(0.08),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withOpacity(0.10), width: 0.8),
+          border: Border.all(color: Colors.white.withOpacity(0.12), width: 0.8),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: Colors.white38, size: 13),
+            Icon(icon, color: Colors.white70, size: 14),
             const SizedBox(height: 5),
             Text(
               label,
-              style: const TextStyle(color: Colors.white38, fontSize: 10),
+              style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 10),
             ),
             const SizedBox(height: 2),
             Text(
@@ -400,7 +421,7 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
   // ── FORECAST TABS ─────────────────────────────────────────────────────────
   Widget _buildForecastTabs() {
     return Container(
-      height: 36,
+      height: 38,
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
       child: Row(
         children: List.generate(_tabs.length, (i) {
@@ -412,17 +433,20 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
                 duration: const Duration(milliseconds: 160),
                 margin: EdgeInsets.only(right: i < _tabs.length - 1 ? 8 : 0),
                 decoration: BoxDecoration(
-                  color: sel ? _green : _surface,
+                  color: sel ? DoctorCropColors.primary : Colors.white,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: sel ? _green : _border, width: 0.9),
+                  border: Border.all(
+                    color: sel ? DoctorCropColors.primary : DoctorCropColors.border,
+                    width: 0.9,
+                  ),
                 ),
                 alignment: Alignment.center,
                 child: Text(
                   _tabs[i],
                   style: TextStyle(
-                    color: sel ? Colors.white : const Color(0xFF444444),
+                    color: sel ? Colors.white : DoctorCropColors.textSecondary,
                     fontSize: 12,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: sel ? FontWeight.w700 : FontWeight.w500,
                   ),
                 ),
               ),
@@ -447,20 +471,16 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
           final it = items[i];
           final wet = it.precip > 50;
           return Container(
-            width: 72,
+            width: 76,
             padding: const EdgeInsets.symmetric(vertical: 10),
-            decoration: BoxDecoration(
-              color: _surface,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: _border, width: 0.9),
-            ),
+            decoration: DoctorCropTheme.cardDecoration(radius: 14),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
                   it.label,
                   style: const TextStyle(
-                    color: _subText,
+                    color: DoctorCropColors.textMuted,
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                   ),
@@ -468,30 +488,34 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
                 const SizedBox(height: 6),
                 Icon(
                   it.icon,
-                  color: wet ? const Color(0xFF777777) : _orange,
+                  color: wet ? DoctorCropColors.info : DoctorCropColors.accent,
                   size: 20,
                 ),
                 const SizedBox(height: 6),
                 Text(
                   "${it.temp}°",
                   style: const TextStyle(
-                    color: _ink,
+                    color: DoctorCropColors.textPrimary,
                     fontSize: 14,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
                 const SizedBox(height: 3),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.water_drop_outlined, color: _green, size: 9),
+                    const Icon(
+                      Icons.water_drop_outlined,
+                      color: DoctorCropColors.primary,
+                      size: 9.5,
+                    ),
                     const SizedBox(width: 2),
                     Text(
                       "${it.precip}%",
                       style: const TextStyle(
-                        color: _green,
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w600,
+                        color: DoctorCropColors.primary,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ],
@@ -504,15 +528,11 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
     );
   }
 
-  // ── RWANDA MAP ────────────────────────────────────────────────────────────
+  // ── RWANDA WEATHER MAP ───────────────────────────────────────────────────
   Widget _buildRwandaMap() {
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-      decoration: BoxDecoration(
-        color: _surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _border, width: 0.9),
-      ),
+      decoration: DoctorCropTheme.cardDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -522,27 +542,27 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  "Weather Map · Rwanda",
+                  "Provincial Weather Map · Rwanda",
                   style: TextStyle(
-                    color: _ink,
+                    color: DoctorCropColors.textPrimary,
                     fontSize: 14,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
-                    vertical: 4,
+                    vertical: 3.5,
                   ),
                   decoration: BoxDecoration(
-                    color: _green.withOpacity(0.10),
+                    color: DoctorCropColors.primaryLight,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: const Text(
-                    "Today",
+                    "Live Map",
                     style: TextStyle(
-                      color: _green,
-                      fontSize: 11,
+                      color: DoctorCropColors.primary,
+                      fontSize: 10.5,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -552,14 +572,13 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
           ),
           const SizedBox(height: 10),
 
-          // Map with pinned weather labels
           LayoutBuilder(
             builder: (context, constraints) {
               final mapW = constraints.maxWidth;
-              const mapH = 270.0;
+              const mapH = 260.0;
               return ClipRRect(
                 borderRadius: const BorderRadius.vertical(
-                  bottom: Radius.circular(20),
+                  bottom: Radius.circular(16),
                 ),
                 child: SizedBox(
                   height: mapH,
@@ -570,7 +589,6 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
                         child: CustomPaint(painter: _RwandaMapPainter()),
                       ),
                       ..._regions.map((r) {
-                        // Pin box is ~62 wide × 60 tall total
                         final px = (r.x * mapW - 31).clamp(0, mapW - 62);
                         final py = (r.y * mapH - 54).clamp(0, mapH - 62);
                         return Positioned(
@@ -602,8 +620,8 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
             border: Border.all(color: r.color.withOpacity(0.45), width: 1.0),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.10),
-                blurRadius: 5,
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 4,
                 offset: const Offset(0, 2),
               ),
             ],
@@ -612,19 +630,19 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(r.icon, color: r.color, size: 13),
-              const SizedBox(height: 2),
+              const SizedBox(height: 1),
               Text(
                 "${r.temp}°",
                 style: TextStyle(
                   color: r.color,
-                  fontSize: 12,
+                  fontSize: 11.5,
                   fontWeight: FontWeight.w800,
                 ),
               ),
               Text(
                 r.name,
                 style: const TextStyle(
-                  color: _ink,
+                  color: DoctorCropColors.textPrimary,
                   fontSize: 8.5,
                   fontWeight: FontWeight.w600,
                 ),
@@ -632,10 +650,10 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
             ],
           ),
         ),
-        Container(width: 1.5, height: 7, color: r.color.withOpacity(0.55)),
+        Container(width: 1.5, height: 6, color: r.color.withOpacity(0.55)),
         Container(
-          width: 6,
-          height: 6,
+          width: 5,
+          height: 5,
           decoration: BoxDecoration(color: r.color, shape: BoxShape.circle),
         ),
       ],
@@ -649,12 +667,8 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
 
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-      decoration: BoxDecoration(
-        color: _surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _border, width: 0.9),
-      ),
+      padding: const EdgeInsets.all(16),
+      decoration: DoctorCropTheme.cardDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -662,32 +676,36 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                "Precipitation Performance",
+                "Rainfall Probability Trend",
                 style: TextStyle(
-                  color: _ink,
+                  color: DoctorCropColors.textPrimary,
                   fontSize: 14,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
+                  horizontal: 9,
+                  vertical: 3.5,
                 ),
                 decoration: BoxDecoration(
-                  color: _green.withOpacity(0.10),
+                  color: DoctorCropColors.primaryLight,
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: Row(
+                child: const Row(
                   children: [
-                    Icon(Icons.water_drop_outlined, color: _green, size: 11),
-                    const SizedBox(width: 4),
+                    Icon(
+                      Icons.water_drop_outlined,
+                      color: DoctorCropColors.primary,
+                      size: 11,
+                    ),
+                    SizedBox(width: 3),
                     Text(
                       "% chance",
                       style: TextStyle(
-                        color: _green,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
+                        color: DoctorCropColors.primary,
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ],
@@ -697,13 +715,11 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
           ),
           const SizedBox(height: 16),
 
-          // Chart row: y-labels + line painter
           SizedBox(
-            height: 150,
+            height: 140,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Y-axis labels
                 Column(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -711,22 +727,22 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
                     return Text(
                       v,
                       style: const TextStyle(
-                        color: Color(0xFFCCCCCC),
+                        color: DoctorCropColors.textMuted,
                         fontSize: 9,
                         fontWeight: FontWeight.w500,
                       ),
                     );
                   }).toList(),
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: 8),
                 Expanded(
                   child: CustomPaint(
                     painter: _PrecipLinePainter(
                       data: data,
-                      lineColor: _green,
-                      fillColorTop: _green.withOpacity(0.20),
-                      fillColorBottom: _green.withOpacity(0.01),
-                      gridColor: _border,
+                      lineColor: DoctorCropColors.primary,
+                      fillColorTop: DoctorCropColors.primary.withOpacity(0.20),
+                      fillColorBottom: DoctorCropColors.primary.withOpacity(0.01),
+                      gridColor: DoctorCropColors.border,
                     ),
                   ),
                 ),
@@ -734,9 +750,8 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
             ),
           ),
 
-          // X-axis labels
           Padding(
-            padding: const EdgeInsets.only(left: 26, top: 8),
+            padding: const EdgeInsets.only(left: 28, top: 8),
             child: Row(
               children: List.generate(
                 labels.length,
@@ -745,7 +760,7 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
                     child: Text(
                       labels[i],
                       style: const TextStyle(
-                        color: _subText,
+                        color: DoctorCropColors.textSecondary,
                         fontSize: 9.5,
                         fontWeight: FontWeight.w500,
                       ),
@@ -760,29 +775,29 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
     );
   }
 
-  // ── NEWS SECTION ──────────────────────────────────────────────────────────
+  // ── AGRICULTURE & WEATHER NEWS ────────────────────────────────────────────
   Widget _buildNewsSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
+          padding: const EdgeInsets.fromLTRB(16, 22, 16, 12),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                "Agriculture & Weather News",
+            children: const [
+              Text(
+                "Agricultural & Climate News",
                 style: TextStyle(
-                  color: _ink,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
+                  color: DoctorCropColors.textPrimary,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
-              const Text(
+              Text(
                 "See all",
                 style: TextStyle(
-                  color: _green,
-                  fontSize: 12,
+                  color: DoctorCropColors.primary,
+                  fontSize: 12.5,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -796,55 +811,24 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
 
   Widget _newsCard(_NewsItem n) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-      height: 480,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
-        color: _dark,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.12),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      decoration: DoctorCropTheme.cardDecoration(),
       clipBehavior: Clip.antiAlias,
-      child: Stack(
-        fit: StackFit.expand,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Background image
           Image.network(
             n.imageUrl,
+            height: 140,
+            width: double.infinity,
             fit: BoxFit.cover,
             errorBuilder: (_, __, ___) =>
-                Container(color: const Color(0xFF222222)),
+                Container(height: 140, color: DoctorCropColors.surfaceMuted),
           ),
-
-          // Gradient: transparent → near-black
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Colors.transparent,
-                  Color(0xBB000000),
-                  Color(0xF0000000),
-                ],
-                stops: [0.0, 0.50, 1.0],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-            ),
-          ),
-
-          // Text content pinned bottom
-          Positioned(
-            left: 24,
-            right: 24,
-            bottom: 54,
+          Padding(
+            padding: const EdgeInsets.all(14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
               children: [
                 Row(
                   children: [
@@ -854,14 +838,14 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
                         vertical: 3,
                       ),
                       decoration: BoxDecoration(
-                        color: n.accentColor,
-                        borderRadius: BorderRadius.circular(20),
+                        color: n.accentColor.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
                         n.source,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 9.5,
+                        style: TextStyle(
+                          color: n.accentColor,
+                          fontSize: 10,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -870,20 +854,20 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
                     Text(
                       n.time,
                       style: const TextStyle(
-                        color: Colors.white54,
-                        fontSize: 10.5,
+                        color: DoctorCropColors.textMuted,
+                        fontSize: 11,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 7),
+                const SizedBox(height: 8),
                 Text(
                   n.title,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14.5,
+                    color: DoctorCropColors.textPrimary,
+                    fontSize: 14,
                     fontWeight: FontWeight.w700,
                     height: 1.3,
                   ),
@@ -893,9 +877,9 @@ class _WeatherForecastPageState extends State<WeatherForecastPage> {
                   n.body,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.58),
-                    fontSize: 11.5,
+                  style: const TextStyle(
+                    color: DoctorCropColors.textSecondary,
+                    fontSize: 12,
                     height: 1.4,
                   ),
                 ),
@@ -937,13 +921,11 @@ class _RwandaMapPainter extends CustomPainter {
     final w = size.width;
     final h = size.height;
 
-    // Background – light warm grey to contrast the green fill
     canvas.drawRect(
       Rect.fromLTWH(0, 0, w, h),
-      Paint()..color = const Color(0xFFE4EDE5),
+      Paint()..color = const Color(0xFFF1F6F2),
     );
 
-    // Rwanda outline polygon (approximate, normalised coords)
     final pts = <Offset>[
       Offset(0.20 * w, 0.06 * h),
       Offset(0.32 * w, 0.03 * h),
@@ -982,18 +964,18 @@ class _RwandaMapPainter extends CustomPainter {
     }
     path.close();
 
-    // Land fill – green gradient
+    // Land fill – emerald gradient
     canvas.drawPath(
       path,
       Paint()
         ..shader = ui.Gradient.linear(Offset(0, 0), Offset(w, h), [
-          const Color(0xFFBEDEC2),
-          const Color(0xFF9ECBA4),
+          const Color(0xFFCBEAD1),
+          const Color(0xFFA5DCAD),
         ])
         ..style = PaintingStyle.fill,
     );
 
-    // Lake Kivu (west edge) – grey, no blue
+    // Lake Kivu (west edge)
     final lakePath = Path()
       ..addOval(
         Rect.fromCenter(
@@ -1005,13 +987,12 @@ class _RwandaMapPainter extends CustomPainter {
     canvas.drawPath(
       lakePath,
       Paint()
-        ..color = const Color(0xFFADB5BB).withOpacity(0.70)
+        ..color = const Color(0xFF94A3B8).withOpacity(0.65)
         ..style = PaintingStyle.fill,
     );
 
-    // Province dividers (faint dashed feel via two offset lines)
     final divP = Paint()
-      ..color = const Color(0xFF7CB87F).withOpacity(0.55)
+      ..color = const Color(0xFF15803D).withOpacity(0.35)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 0.85;
     canvas.drawLine(
@@ -1024,20 +1005,14 @@ class _RwandaMapPainter extends CustomPainter {
       Offset(0.94 * w, 0.46 * h),
       divP,
     );
-    // Kigali zone diagonal
-    canvas.drawLine(
-      Offset(0.38 * w, 0.34 * h),
-      Offset(0.62 * w, 0.58 * h),
-      divP,
-    );
 
     // Outline stroke
     canvas.drawPath(
       path,
       Paint()
-        ..color = const Color(0xFF3A8C42).withOpacity(0.75)
+        ..color = DoctorCropColors.primary
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.0
+        ..strokeWidth = 1.8
         ..strokeJoin = StrokeJoin.round,
     );
   }
@@ -1047,7 +1022,7 @@ class _RwandaMapPainter extends CustomPainter {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-//  Precipitation Line + Shaded Area Painter
+//  Precipitation Line Painter
 // ──────────────────────────────────────────────────────────────────────────────
 class _PrecipLinePainter extends CustomPainter {
   final List<double> data;
@@ -1067,7 +1042,6 @@ class _PrecipLinePainter extends CustomPainter {
     final w = size.width;
     final h = size.height;
 
-    // Horizontal grid lines at 0 / 25 / 50 / 75 / 100 %
     final gridP = Paint()
       ..color = gridColor
       ..strokeWidth = 0.6;
@@ -1076,7 +1050,6 @@ class _PrecipLinePainter extends CustomPainter {
       canvas.drawLine(Offset(0, y), Offset(w, y), gridP);
     }
 
-    // Build smooth cubic path through data points
     final count = data.length;
     final pts = <Offset>[
       for (int i = 0; i < count; i++)
@@ -1097,7 +1070,6 @@ class _PrecipLinePainter extends CustomPainter {
       );
     }
 
-    // Fill area below line
     final fillPath = Path()..addPath(linePath, Offset.zero);
     fillPath
       ..lineTo(pts.last.dx, h)
@@ -1114,7 +1086,6 @@ class _PrecipLinePainter extends CustomPainter {
         ..style = PaintingStyle.fill,
     );
 
-    // Line
     canvas.drawPath(
       linePath,
       Paint()
@@ -1125,10 +1096,9 @@ class _PrecipLinePainter extends CustomPainter {
         ..strokeJoin = StrokeJoin.round,
     );
 
-    // Dots at each point
     for (final pt in pts) {
-      canvas.drawCircle(pt, 4.5, Paint()..color = Colors.white);
-      canvas.drawCircle(pt, 3.0, Paint()..color = lineColor);
+      canvas.drawCircle(pt, 4.0, Paint()..color = Colors.white);
+      canvas.drawCircle(pt, 2.8, Paint()..color = lineColor);
     }
   }
 
@@ -1136,9 +1106,6 @@ class _PrecipLinePainter extends CustomPainter {
   bool shouldRepaint(_PrecipLinePainter o) => o.data != data;
 }
 
-// ──────────────────────────────────────────────────────────────────────────────
-//  Data models
-// ──────────────────────────────────────────────────────────────────────────────
 class _ForecastItem {
   final String label, condition;
   final IconData icon;

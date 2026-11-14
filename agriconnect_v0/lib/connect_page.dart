@@ -1,7 +1,10 @@
+import 'package:agriconnect_v0/loginpage.dart';
 import 'package:agriconnect_v0/notifier.dart';
+import 'package:agriconnect_v0/registerPage.dart';
+import 'package:agriconnect_v0/theme/app_theme.dart';
+import 'package:agriconnect_v0/widget_tree.dart';
 import 'package:flutter/material.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
-// Add this import at the top of your file
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
@@ -9,23 +12,25 @@ Future<void> refreshAllData() async {
   final me = sessionNotifier.value;
   if (me == null) return;
 
-  final response = await http.post(
-    Uri.parse("http://192.168.50.36:8000/fetch-all"),
-    headers: {"Content-Type": "application/json"},
-    body: jsonEncode({"phone": me.phoneNumber}),
-  );
+  try {
+    final response = await http.post(
+      Uri.parse("http://192.168.50.36:8000/fetch-all"),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({"phone": me.phoneNumber}),
+    );
 
-  if (response.statusCode == 200) {
-    final data = jsonDecode(response.body);
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
 
-    fetchedUsers.value = (data['users'] as List)
-        .map((item) => UserInfo.fromJson(item as Map<String, dynamic>))
-        .toList();
+      fetchedUsers.value = (data['users'] as List)
+          .map((item) => UserInfo.fromJson(item as Map<String, dynamic>))
+          .toList();
 
-    fetchChats.value = (data['chats'] as List)
-        .map((chat) => UserChats.fromJson(chat as Map<String, dynamic>))
-        .toList();
-  }
+      fetchChats.value = (data['chats'] as List)
+          .map((chat) => UserChats.fromJson(chat as Map<String, dynamic>))
+          .toList();
+    }
+  } catch (_) {}
 }
 
 class AgroChatListPage extends StatefulWidget {
@@ -36,11 +41,11 @@ class AgroChatListPage extends StatefulWidget {
 }
 
 class _AgroChatListPageState extends State<AgroChatListPage> {
+  final TextEditingController _searchController = TextEditingController();
   String selectedCategory = "All";
+  String searchQuery = "";
   final List<String> categories = ["All", "Agronomists", "Shops"];
 
-  // From the full chats list, extract one entry per unique person we talked to.
-  // Each entry is the LATEST message with that person.
   List<UserChats> _getUniqueConversations(List<UserChats> allChats) {
     final me = sessionNotifier.value;
     if (me == null) return [];
@@ -48,12 +53,9 @@ class _AgroChatListPageState extends State<AgroChatListPage> {
     final Map<int, UserChats> seen = {};
 
     for (final chat in allChats) {
-      // The "other person" is whoever is NOT me
-      final otherPersonId = chat.senderId == me.userId
-          ? chat.receiverId
-          : chat.senderId;
+      final otherPersonId =
+          chat.senderId == me.userId ? chat.receiverId : chat.senderId;
 
-      // Keep only the latest message per person (list is ordered ASC so last wins)
       seen[otherPersonId] = chat;
     }
 
@@ -61,11 +63,17 @@ class _AgroChatListPageState extends State<AgroChatListPage> {
   }
 
   @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: DoctorCropColors.background,
       body: SafeArea(
-        child: ValueListenableBuilder(
+        child: ValueListenableBuilder<SessionUser?>(
           valueListenable: sessionNotifier,
           builder: (context, user, _) {
             if (user == null) return _loginToChatWidget(context);
@@ -75,47 +83,91 @@ class _AgroChatListPageState extends State<AgroChatListPage> {
               children: [
                 _buildSearchBar(),
                 _buildCategories(),
-                const SizedBox(height: 4),
-                ValueListenableBuilder(
+                const SizedBox(height: 6),
+                ValueListenableBuilder<List<UserChats>>(
                   valueListenable: fetchChats,
                   builder: (context, allChats, _) {
-                    final conversations = _getUniqueConversations(
-                      allChats ?? [],
-                    );
+                    final rawConversations =
+                        _getUniqueConversations(allChats);
+
+                    final conversations = rawConversations.where((c) {
+                      final name = c.isMine ? c.receiverName : c.senderName;
+                      return searchQuery.isEmpty ||
+                          name.toLowerCase().contains(searchQuery.toLowerCase()) ||
+                          c.message.toLowerCase().contains(searchQuery.toLowerCase());
+                    }).toList();
 
                     return Expanded(
-                      child: ListView(
-                        padding: const EdgeInsets.fromLTRB(5, 18, 16, 24),
-                        children: [
-                          if (conversations.isEmpty)
-                            Column(
-                              children: [
-                                const SizedBox(height: 40),
-                                Icon(
-                                  PhosphorIcons.paperPlaneTilt(),
-                                  size: 48,
-                                  color: Colors.grey.shade300,
+                      child: RefreshIndicator(
+                        onRefresh: refreshAllData,
+                        color: DoctorCropColors.primary,
+                        child: ListView(
+                          padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
+                          children: [
+                            if (conversations.isEmpty)
+                              Container(
+                                margin: const EdgeInsets.symmetric(vertical: 20),
+                                padding: const EdgeInsets.all(24),
+                                decoration: DoctorCropTheme.cardDecoration(),
+                                child: Column(
+                                  children: [
+                                    Container(
+                                      width: 56,
+                                      height: 56,
+                                      decoration: BoxDecoration(
+                                        color: DoctorCropColors.primaryLight,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.forum_outlined,
+                                        size: 28,
+                                        color: DoctorCropColors.primary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 14),
+                                    const Text(
+                                      "No conversations yet",
+                                      style: TextStyle(
+                                        color: DoctorCropColors.textPrimary,
+                                        fontSize: 14.5,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    const Text(
+                                      "Connect with nearby agronomists and verified shops below to ask questions and buy supplies.",
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: DoctorCropColors.textSecondary,
+                                        fontSize: 12,
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  "No chats yet",
+                              )
+                            else ...[
+                              const Padding(
+                                padding: EdgeInsets.only(bottom: 8),
+                                child: Text(
+                                  "RECENT CONVERSATIONS",
                                   style: TextStyle(
-                                    color: Colors.grey.shade400,
-                                    fontSize: 13,
+                                    color: DoctorCropColors.textMuted,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.8,
                                   ),
                                 ),
-                              ],
-                            )
-                          else
-                            ...conversations.map(
-                              (chat) => _buildChatItem(chat),
-                            ),
+                              ),
+                              ...conversations.map(
+                                (chat) => _buildChatItem(chat),
+                              ),
+                            ],
 
-                          conversations.isEmpty
-                              ? SizedBox(height: 430)
-                              : SizedBox(height: 100),
-                          _buildSuggestionsSection(),
-                        ],
+                            const SizedBox(height: 20),
+                            _buildSuggestionsSection(),
+                          ],
+                        ),
                       ),
                     );
                   },
@@ -130,92 +182,83 @@ class _AgroChatListPageState extends State<AgroChatListPage> {
 
   Widget _loginToChatWidget(BuildContext context) {
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 72,
-              height: 72,
-              decoration: const BoxDecoration(
-                color: Color(0xFFF0F4F1),
-                shape: BoxShape.circle,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(28),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: DoctorCropTheme.cardDecoration(),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: DoctorCropColors.primaryLight,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.forum_rounded,
+                  size: 36,
+                  color: DoctorCropColors.primary,
+                ),
               ),
-              child: Icon(
-                Icons.forum_outlined,
-                size: 32,
-                color: Colors.greenAccent.shade700,
+              const SizedBox(height: 20),
+              const Text(
+                "Farmer & Expert Community",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: DoctorCropColors.textPrimary,
+                  letterSpacing: -0.3,
+                ),
               ),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              "Join the conversation",
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF111111),
+              const SizedBox(height: 8),
+              const Text(
+                "Sign in to chat with regional agronomists, consult about crop health, and order supplies directly from local agro stores.",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: DoctorCropColors.textSecondary,
+                  height: 1.45,
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              "Connect with agronomists and agro shops near you.",
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 13,
-                color: Colors.grey.shade500,
-                height: 1.5,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                GestureDetector(
-                  onTap: () {},
-                  child: Container(
-                    height: 44,
-                    width: 100,
-                    decoration: BoxDecoration(
-                      color: Colors.black54,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    alignment: Alignment.center,
-                    child: const Text(
-                      "Login",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                LoginPage(homePage: const WidgetTree()),
+                          ),
+                        );
+                      },
+                      child: const Text("Sign In"),
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                GestureDetector(
-                  onTap: () {},
-                  child: Container(
-                    height: 44,
-                    width: 100,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF0F4F1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFD0DDD4)),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      "Sign up",
-                      style: TextStyle(
-                        color: Colors.greenAccent.shade700,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                RegisterPage(homePage: const WidgetTree()),
+                          ),
+                        );
+                      },
+                      child: const Text("Register"),
                     ),
                   ),
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -223,64 +266,65 @@ class _AgroChatListPageState extends State<AgroChatListPage> {
 
   Widget _buildSearchBar() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
-      child: Row(
-        children: [
-          Expanded(
-            child: Container(
-              height: 44,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF5F5F3),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFE5E5E0), width: 0.8),
-              ),
-              child: TextField(
-                style: const TextStyle(
-                  fontSize: 13.5,
-                  color: Color(0xFF111111),
-                ),
-                cursorColor: Colors.greenAccent.shade700,
-                decoration: InputDecoration(
-                  hintText: "Search agronomists, shops...",
-                  hintStyle: const TextStyle(
-                    color: Color(0xFFAAAAAA),
-                    fontSize: 13,
-                  ),
-                  prefixIcon: const Icon(
-                    Icons.search_rounded,
-                    color: Color(0xFF999999),
-                    size: 20,
-                  ),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 13),
-                ),
-              ),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: Container(
+        height: 46,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: DoctorCropColors.border, width: 0.9),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
             ),
+          ],
+        ),
+        child: TextField(
+          controller: _searchController,
+          onChanged: (val) => setState(() => searchQuery = val.trim()),
+          style: const TextStyle(
+            fontSize: 13.5,
+            color: DoctorCropColors.textPrimary,
           ),
-          const SizedBox(width: 10),
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF5F5F3),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE5E5E0), width: 0.8),
+          decoration: InputDecoration(
+            hintText: "Search conversations, agronomists, shops...",
+            hintStyle: const TextStyle(
+              color: DoctorCropColors.textMuted,
+              fontSize: 13,
             ),
-            child: const Icon(
-              Icons.tune_rounded,
-              color: Color(0xFF555555),
+            prefixIcon: const Icon(
+              Icons.search_rounded,
+              color: DoctorCropColors.textMuted,
               size: 20,
             ),
+            suffixIcon: searchQuery.isNotEmpty
+                ? IconButton(
+                    icon: const Icon(Icons.close_rounded, size: 16),
+                    color: DoctorCropColors.textMuted,
+                    onPressed: () {
+                      setState(() {
+                        searchQuery = "";
+                        _searchController.clear();
+                      });
+                    },
+                  )
+                : null,
+            border: InputBorder.none,
+            enabledBorder: InputBorder.none,
+            focusedBorder: InputBorder.none,
+            contentPadding: const EdgeInsets.symmetric(vertical: 13),
           ),
-        ],
+        ),
       ),
     );
   }
 
   Widget _buildCategories() {
     return Container(
-      height: 33,
-      margin: const EdgeInsets.only(top: 12),
+      height: 36,
+      margin: const EdgeInsets.only(top: 10),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -294,23 +338,24 @@ class _AgroChatListPageState extends State<AgroChatListPage> {
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 180),
               margin: const EdgeInsets.only(right: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 14),
               decoration: BoxDecoration(
-                color: selected ? Colors.greenAccent.shade700 : Colors.white,
+                color: selected ? DoctorCropColors.primary : Colors.white,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: selected
-                      ? Colors.greenAccent.shade700
-                      : const Color(0xFFE2E2E0),
+                      ? DoctorCropColors.primary
+                      : DoctorCropColors.border,
+                  width: 0.9,
                 ),
               ),
               alignment: Alignment.center,
               child: Text(
                 item,
                 style: TextStyle(
-                  color: selected ? Colors.white : const Color(0xFF444444),
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w600,
+                  color: selected ? Colors.white : DoctorCropColors.textSecondary,
+                  fontSize: 12,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                 ),
               ),
             ),
@@ -320,116 +365,110 @@ class _AgroChatListPageState extends State<AgroChatListPage> {
     );
   }
 
-  // Shows one row per person — the latest message is used as preview
   Widget _buildChatItem(UserChats chat) {
     final me = sessionNotifier.value;
     if (me == null) return const SizedBox();
 
-    final otherPersonId = chat.senderId == me.userId
-        ? chat.receiverId
-        : chat.senderId;
+    final otherPersonId =
+        chat.senderId == me.userId ? chat.receiverId : chat.senderId;
 
-    // Show sender's name; if I sent it, still show the other person's name
-    final String displayName = chat.isMine
-        ? chat.receiverName
-        : chat.senderName;
+    final String displayName =
+        chat.isMine ? chat.receiverName : chat.senderName;
 
-    final String lastMessagePreview = chat.isMine
-        ? "You: ${chat.message}"
-        : chat.message;
+    final String lastMessagePreview =
+        chat.isMine ? "You: ${chat.message}" : chat.message;
 
-    return GestureDetector(
-      onTap: () {
-        // Filter all messages that belong to this conversation
-        final allChats = fetchChats.value ?? [];
-        final conversationMessages = allChats
-            .where(
-              (m) =>
-                  (m.senderId == me.userId && m.receiverId == otherPersonId) ||
-                  (m.senderId == otherPersonId && m.receiverId == me.userId),
-            )
-            .toList();
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: DoctorCropTheme.cardDecoration(),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () {
+          final allChats = fetchChats.value;
+          final conversationMessages = allChats
+              .where(
+                (m) =>
+                    (m.senderId == me.userId && m.receiverId == otherPersonId) ||
+                    (m.senderId == otherPersonId && m.receiverId == me.userId),
+              )
+              .toList();
 
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => AgroChatConversationPage(
-              otherPersonName: displayName,
-              otherPersonId: otherPersonId,
-              initialMessages: conversationMessages,
-            ),
-          ),
-        );
-      },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(0),
-          border: Border(),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 45,
-              height: 45,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: Colors.transparent,
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.black26, width: 0.5),
-              ),
-              child: Icon(Icons.person, color: Colors.black54),
-            ),
-            const SizedBox(width: 15),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    displayName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Color(0xFF111111),
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  Text(
-                    lastMessagePreview,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Color(0xFFAAAAAA),
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => AgroChatConversationPage(
+                otherPersonName: displayName,
+                otherPersonId: otherPersonId,
+                initialMessages: conversationMessages,
               ),
             ),
-            const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  _formatTime(chat.createdAt),
+          );
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: DoctorCropColors.primaryLight,
+                  shape: BoxShape.circle,
+                ),
+                child: Text(
+                  displayName.isNotEmpty ? displayName[0].toUpperCase() : "U",
                   style: const TextStyle(
-                    color: Color(0xFFBBBBBB),
-                    fontSize: 12,
+                    color: DoctorCropColors.primary,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 16,
                   ),
                 ),
-                const SizedBox(height: 8),
-                const Icon(
-                  Icons.chevron_right_rounded,
-                  color: Color(0xFFCCCCCC),
-                  size: 20,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            displayName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: DoctorCropColors.textPrimary,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          _formatTime(chat.createdAt),
+                          style: const TextStyle(
+                            color: DoctorCropColors.textMuted,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      lastMessagePreview,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: DoctorCropColors.textSecondary,
+                        fontSize: 12.5,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -450,57 +489,57 @@ class _AgroChatListPageState extends State<AgroChatListPage> {
   }
 
   Widget _buildSuggestionsSection() {
-    return ValueListenableBuilder(
+    return ValueListenableBuilder<List<UserInfo>?>(
       valueListenable: fetchedUsers,
       builder: (context, users, _) {
         if (users == null || users.isEmpty) return const SizedBox();
 
+        final filteredUsers = users.where((u) {
+          return searchQuery.isEmpty ||
+              u.fullName.toLowerCase().contains(searchQuery.toLowerCase()) ||
+              u.location.toLowerCase().contains(searchQuery.toLowerCase());
+        }).toList();
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 15),
-              child: Row(
-                children: [
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "People to connect with",
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF111111),
-                          ),
-                        ),
-                        SizedBox(height: 2),
-                        Text(
-                          "Farmers, agronomists & shops near you",
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            color: Color(0xFFAAAAAA),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () {},
-                    child: Text(
-                      "See all",
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "CONNECT WITH LOCAL EXPERTS",
                       style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.greenAccent.shade700,
-                        fontWeight: FontWeight.w600,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: DoctorCropColors.textMuted,
+                        letterSpacing: 0.8,
                       ),
                     ),
+                    SizedBox(height: 2),
+                    Text(
+                      "Verified agronomists & registered stores in Rwanda",
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: DoctorCropColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+                Text(
+                  "${filteredUsers.length} available",
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: DoctorCropColors.primary,
+                    fontWeight: FontWeight.w700,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            const SizedBox(height: 14),
-            ...users.map((user) => _buildSuggestionCard(user)),
+            const SizedBox(height: 12),
+            ...filteredUsers.map((user) => _buildSuggestionCard(user)),
           ],
         );
       },
@@ -510,66 +549,53 @@ class _AgroChatListPageState extends State<AgroChatListPage> {
   Widget _buildSuggestionCard(UserInfo person) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFAFAF8),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFEEEEEA), width: 0.9),
-      ),
+      padding: const EdgeInsets.all(12),
+      decoration: DoctorCropTheme.cardDecoration(),
       child: Row(
         children: [
-          Stack(
-            children: [
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: Colors.greenAccent.shade700.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.person,
-                  color: Colors.greenAccent.shade700,
-                  size: 22,
-                ),
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: DoctorCropColors.primaryLight,
+              shape: BoxShape.circle,
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              person.fullName.isNotEmpty ? person.fullName[0].toUpperCase() : "A",
+              style: const TextStyle(
+                color: DoctorCropColors.primary,
+                fontWeight: FontWeight.w800,
+                fontSize: 16,
               ),
-              Positioned(
-                right: 1,
-                bottom: 1,
-                child: Container(
-                  width: 11,
-                  height: 11,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFCCCCCC),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  person.fullName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFF111111),
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  person.phoneNumber,
-                  style: const TextStyle(
-                    color: Color(0xFF999999),
-                    fontSize: 11,
-                  ),
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        person.fullName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: DoctorCropColors.textPrimary,
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(
+                      Icons.verified_rounded,
+                      color: DoctorCropColors.primary,
+                      size: 13,
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 2),
                 Row(
@@ -577,14 +603,18 @@ class _AgroChatListPageState extends State<AgroChatListPage> {
                     const Icon(
                       Icons.location_on_outlined,
                       size: 11,
-                      color: Color(0xFFBBBBBB),
+                      color: DoctorCropColors.textMuted,
                     ),
-                    const SizedBox(width: 2),
-                    Text(
-                      person.location,
-                      style: const TextStyle(
-                        color: Color(0xFFBBBBBB),
-                        fontSize: 11,
+                    const SizedBox(width: 3),
+                    Expanded(
+                      child: Text(
+                        person.location.isNotEmpty ? person.location : "Rwanda",
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: DoctorCropColors.textMuted,
+                          fontSize: 11,
+                        ),
                       ),
                     ),
                   ],
@@ -593,8 +623,8 @@ class _AgroChatListPageState extends State<AgroChatListPage> {
             ),
           ),
           const SizedBox(width: 10),
-          GestureDetector(
-            onTap: () {
+          ElevatedButton.icon(
+            onPressed: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -606,27 +636,12 @@ class _AgroChatListPageState extends State<AgroChatListPage> {
                 ),
               );
             },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.greenAccent.shade700,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.message_outlined, size: 13, color: Colors.white),
-                  SizedBox(width: 5),
-                  Text(
-                    "Message",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
+            icon: const Icon(Icons.chat_bubble_outline_rounded, size: 14),
+            label: const Text("Message"),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: DoctorCropColors.primary,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
             ),
           ),
         ],
@@ -636,7 +651,7 @@ class _AgroChatListPageState extends State<AgroChatListPage> {
 }
 
 // ─────────────────────────────────────────────────────────
-//  Conversation Page
+//  AgroChat Conversation Page
 // ─────────────────────────────────────────────────────────
 
 class AgroChatConversationPage extends StatefulWidget {
@@ -664,7 +679,6 @@ class _AgroChatConversationPageState extends State<AgroChatConversationPage> {
   @override
   void initState() {
     super.initState();
-    // Convert UserChats history into simple maps the bubble widget uses
     _messages = widget.initialMessages.map((m) {
       return <String, dynamic>{
         "text": m.message,
@@ -680,7 +694,6 @@ class _AgroChatConversationPageState extends State<AgroChatConversationPage> {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
 
-    // Show the message in the UI immediately (optimistic update)
     setState(() {
       _messages.add(<String, dynamic>{
         "text": text,
@@ -691,7 +704,6 @@ class _AgroChatConversationPageState extends State<AgroChatConversationPage> {
     _controller.clear();
     _scrollToBottom();
 
-    // Send to backend
     final me = sessionNotifier.value;
     if (me == null) return;
 
@@ -744,26 +756,150 @@ class _AgroChatConversationPageState extends State<AgroChatConversationPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAF8),
+      backgroundColor: DoctorCropColors.background,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        leading: IconButton(
+          onPressed: () => Navigator.pop(context),
+          icon: Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: DoctorCropColors.surfaceMuted,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: DoctorCropColors.border, width: 0.8),
+            ),
+            child: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              size: 16,
+              color: DoctorCropColors.textPrimary,
+            ),
+          ),
+        ),
+        title: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: DoctorCropColors.primaryLight,
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Text(
+                  widget.otherPersonName.isNotEmpty
+                      ? widget.otherPersonName[0].toUpperCase()
+                      : "A",
+                  style: const TextStyle(
+                    color: DoctorCropColors.primary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.otherPersonName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: DoctorCropColors.textPrimary,
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const Text(
+                    "Doctor Crop Verified Expert",
+                    style: TextStyle(
+                      color: DoctorCropColors.primary,
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          IconButton(
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("Voice consultation line is available during farm hours"),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
+            icon: const Icon(
+              Icons.phone_outlined,
+              color: DoctorCropColors.primary,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 6),
+        ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(height: 0.9, color: DoctorCropColors.border),
+        ),
+      ),
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(),
             Expanded(
               child: _messages.isEmpty
                   ? Center(
-                      child: Text(
-                        "No messages yet.\nSay hello! 👋",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.grey.shade400,
-                          fontSize: 13,
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 60,
+                              height: 60,
+                              decoration: BoxDecoration(
+                                color: DoctorCropColors.primaryLight,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.chat_bubble_outline_rounded,
+                                color: DoctorCropColors.primary,
+                                size: 28,
+                              ),
+                            ),
+                            const SizedBox(height: 14),
+                            Text(
+                              "Say hello to ${widget.otherPersonName} 👋",
+                              style: const TextStyle(
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.w700,
+                                color: DoctorCropColors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            const Text(
+                              "Ask questions about crop diseases, dosage, or order delivery.",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: DoctorCropColors.textSecondary,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     )
                   : ListView.builder(
                       controller: _scrollController,
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                      padding: const EdgeInsets.all(16),
                       itemCount: _messages.length,
                       itemBuilder: (_, i) => _buildBubble(_messages[i]),
                     ),
@@ -775,64 +911,6 @@ class _AgroChatConversationPageState extends State<AgroChatConversationPage> {
     );
   }
 
-  Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(4, 10, 12, 10),
-      decoration: const BoxDecoration(
-        color: Colors.transparent,
-        border: Border(bottom: BorderSide(color: Color(0xFFF0F0EC))),
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
-            color: const Color(0xFF111111),
-          ),
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: Colors.greenAccent.shade700.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text(
-                widget.otherPersonName[0].toUpperCase(),
-                style: TextStyle(
-                  color: Colors.greenAccent.shade700,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              widget.otherPersonName,
-              style: const TextStyle(
-                color: Color(0xFF111111),
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.call_outlined, size: 20),
-            color: const Color(0xFF555555),
-          ),
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.more_vert_rounded, size: 20),
-            color: const Color(0xFF555555),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildBubble(Map<String, dynamic> msg) {
     final isMe = msg["isMe"] as bool;
 
@@ -840,43 +918,49 @@ class _AgroChatConversationPageState extends State<AgroChatConversationPage> {
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.72,
+          maxWidth: MediaQuery.of(context).size.width * 0.74,
         ),
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: isMe ? Colors.greenAccent.shade700 : Colors.white,
+          color: isMe ? DoctorCropColors.primary : Colors.white,
           borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(18),
-            topRight: const Radius.circular(18),
-            bottomLeft: Radius.circular(isMe ? 18 : 4),
-            bottomRight: Radius.circular(isMe ? 4 : 18),
+            topLeft: const Radius.circular(16),
+            topRight: const Radius.circular(16),
+            bottomLeft: Radius.circular(isMe ? 16 : 3),
+            bottomRight: Radius.circular(isMe ? 3 : 16),
           ),
           border: isMe
               ? null
-              : Border.all(color: const Color(0xFFEEEEEA), width: 0.8),
+              : Border.all(color: DoctorCropColors.border, width: 0.9),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.025),
+              blurRadius: 4,
+              offset: const Offset(0, 1),
+            ),
+          ],
         ),
         child: Column(
-          crossAxisAlignment: isMe
-              ? CrossAxisAlignment.end
-              : CrossAxisAlignment.start,
+          crossAxisAlignment:
+              isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           children: [
             Text(
               msg["text"] as String,
               style: TextStyle(
-                color: isMe ? Colors.white : const Color(0xFF1A1A1A),
+                color: isMe ? Colors.white : DoctorCropColors.textPrimary,
                 fontSize: 13.5,
                 height: 1.4,
               ),
             ),
-            const SizedBox(height: 5),
+            const SizedBox(height: 4),
             Text(
               msg["time"] as String,
               style: TextStyle(
                 color: isMe
-                    ? Colors.white.withOpacity(0.6)
-                    : const Color(0xFFBBBBBB),
-                fontSize: 10.5,
+                    ? Colors.white.withOpacity(0.7)
+                    : DoctorCropColors.textMuted,
+                fontSize: 10,
               ),
             ),
           ],
@@ -887,79 +971,91 @@ class _AgroChatConversationPageState extends State<AgroChatConversationPage> {
 
   Widget _buildInput() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 14),
-      decoration: const BoxDecoration(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+      decoration: BoxDecoration(
         color: Colors.white,
-        border: Border(top: BorderSide(color: Color(0xFFF0F0EC))),
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.add_circle_outline_rounded, size: 24),
-            color: const Color(0xFF888888),
-          ),
-          Expanded(
-            child: TextField(
-              controller: _controller,
-              minLines: 1,
-              maxLines: 4,
-              style: const TextStyle(fontSize: 13.5, color: Color(0xFF111111)),
-              onSubmitted: (_) => _sendMessage(),
-              decoration: InputDecoration(
-                hintText: "Type your message...",
-                hintStyle: const TextStyle(
-                  color: Color(0xFFBBBBBB),
-                  fontSize: 13,
-                ),
-                filled: true,
-                fillColor: const Color(0xFFF5F5F3),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 11,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  borderSide: const BorderSide(
-                    color: Color(0xFFE8E8E4),
-                    width: 0.8,
-                  ),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  borderSide: const BorderSide(
-                    color: Color(0xFFE8E8E4),
-                    width: 0.8,
-                  ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  borderSide: BorderSide(
-                    color: Colors.greenAccent.shade700,
-                    width: 1,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          GestureDetector(
-            onTap: _sendMessage,
-            child: Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: Colors.greenAccent.shade700,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: const Icon(
-                Icons.send_rounded,
-                color: Colors.white,
-                size: 18,
-              ),
-            ),
+        border: const Border(
+          top: BorderSide(color: DoctorCropColors.border, width: 0.9),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
           ),
         ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          children: [
+            IconButton(
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("Attach photo or scan report"),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              },
+              icon: const Icon(
+                Icons.add_photo_alternate_outlined,
+                size: 22,
+                color: DoctorCropColors.textSecondary,
+              ),
+            ),
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: DoctorCropColors.surfaceMuted,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: DoctorCropColors.border, width: 0.8),
+                ),
+                child: TextField(
+                  controller: _controller,
+                  minLines: 1,
+                  maxLines: 4,
+                  style: const TextStyle(
+                    fontSize: 13.5,
+                    color: DoctorCropColors.textPrimary,
+                  ),
+                  onSubmitted: (_) => _sendMessage(),
+                  decoration: const InputDecoration(
+                    hintText: "Type agricultural inquiry...",
+                    hintStyle: TextStyle(
+                      color: DoctorCropColors.textMuted,
+                      fontSize: 13,
+                    ),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: _sendMessage,
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: DoctorCropColors.primary,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.send_rounded,
+                  color: Colors.white,
+                  size: 18,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

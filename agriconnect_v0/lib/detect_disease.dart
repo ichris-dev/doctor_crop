@@ -2,6 +2,7 @@
 
 import 'dart:convert';
 import 'dart:io';
+import 'package:agriconnect_v0/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
@@ -15,17 +16,8 @@ class DiseaseDetectionPage extends StatefulWidget {
 
 class _DiseaseDetectionPageState extends State<DiseaseDetectionPage>
     with TickerProviderStateMixin {
-  // ── Design tokens ──────────────────────────────────────────────────────
-  static const Color _ink = Color(0xFF111111);
-  static const Color _surface = Color(0xFFFAFAF8);
-  static const Color _border = Color(0xFFEEEEEA);
-  static const Color _green = Color(0xFF40B37A);
-  static const Color _greenDark = Color(0xFF2A7D55);
-  static const Color _orange = Color(0xFFF97316);
-  static const Color _orangeLight = Color(0xFFFB923C);
-
   // ── State ──────────────────────────────────────────────────────────────
-  String? _selectedCrop;
+  String? _selectedCrop = "Potato";
   final Map<String, File?> _cropImages = {
     'Potato': null,
     'Maize': null,
@@ -43,9 +35,6 @@ class _DiseaseDetectionPageState extends State<DiseaseDetectionPage>
     return _cropImages[_selectedCrop];
   }
 
-  bool _isAnalyzing = false;
-  int _analyzeStep = 0;
-
   late AnimationController _pulseController;
   late AnimationController _fadeController;
   late Animation<double> _fadeAnim;
@@ -54,13 +43,24 @@ class _DiseaseDetectionPageState extends State<DiseaseDetectionPage>
   final ScrollController _scrollController = ScrollController();
 
   final List<Map<String, dynamic>> _crops = [
-    {'name': 'Potato', 'icon': Icons.eco_outlined, 'color': Color(0xFF2A7D55)},
+    {
+      'name': 'Potato',
+      'icon': Icons.eco_rounded,
+      'color': DoctorCropColors.primary,
+      'description': 'Irish & Sweet Potato',
+    },
     {
       'name': 'Maize',
-      'icon': Icons.agriculture_outlined,
-      'color': Color(0xFFF97316),
+      'icon': Icons.agriculture_rounded,
+      'color': DoctorCropColors.accent,
+      'description': 'Corn & Cereals',
     },
-    {'name': 'Beans', 'icon': Icons.spa_outlined, 'color': Color(0xFF6ECF9B)},
+    {
+      'name': 'Beans',
+      'icon': Icons.spa_rounded,
+      'color': const Color(0xFF0D9488),
+      'description': 'Climbing & Bush Beans',
+    },
   ];
 
   @override
@@ -87,7 +87,12 @@ class _DiseaseDetectionPageState extends State<DiseaseDetectionPage>
 
   Future<void> sendImageData() async {
     if (_capturedImage == null || _selectedCrop == null) {
-      print("No image or crop selected");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Please select a crop and take a photo first"),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
       return;
     }
 
@@ -99,9 +104,7 @@ class _DiseaseDetectionPageState extends State<DiseaseDetectionPage>
       });
 
       final createdTime = DateTime.now().toIso8601String();
-
       final url = Uri.parse("http://192.168.50.36:8000/upload-image");
-
       final request = http.MultipartRequest("POST", url);
 
       request.fields["crop"] = _selectedCrop!;
@@ -115,9 +118,6 @@ class _DiseaseDetectionPageState extends State<DiseaseDetectionPage>
       final response = await request.send();
       final responseBody = await response.stream.bytesToString();
 
-      print("STATUS: ${response.statusCode}");
-      print("BODY: $responseBody");
-
       final decoded = jsonDecode(responseBody);
 
       if (response.statusCode == 200 && decoded["prediction"] != null) {
@@ -129,6 +129,18 @@ class _DiseaseDetectionPageState extends State<DiseaseDetectionPage>
           _resultReady = true;
           _isUploading = false;
         });
+        _fadeController.forward(from: 0.0);
+
+        // Scroll to results
+        Future.delayed(const Duration(milliseconds: 150), () {
+          if (_scrollController.hasClients) {
+            _scrollController.animateTo(
+              _scrollController.position.maxScrollExtent,
+              duration: const Duration(milliseconds: 400),
+              curve: Curves.easeOut,
+            );
+          }
+        });
       } else {
         setState(() {
           _uploadError = decoded.toString();
@@ -137,11 +149,9 @@ class _DiseaseDetectionPageState extends State<DiseaseDetectionPage>
       }
     } catch (e) {
       setState(() {
-        _uploadError = e.toString();
+        _uploadError = "Detection service currently unreachable: $e";
         _isUploading = false;
       });
-
-      print("Upload error: $e");
     }
   }
 
@@ -158,7 +168,7 @@ class _DiseaseDetectionPageState extends State<DiseaseDetectionPage>
       setState(() {
         _cropImages[_selectedCrop!] = File(file.path);
         _resultReady = false;
-        _analyzeStep = 0;
+        _uploadError = null;
         _fadeController.reset();
       });
     }
@@ -167,280 +177,119 @@ class _DiseaseDetectionPageState extends State<DiseaseDetectionPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: DoctorCropColors.background,
       body: SafeArea(
         child: ListView(
           controller: _scrollController,
-          padding: EdgeInsets.zero,
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
           children: [
             _buildIntroSection(),
+            const SizedBox(height: 16),
             _buildCropSelector(),
+            const SizedBox(height: 16),
             _buildCameraSection(),
 
-            if (_resultReady) _buildPredictionResults(),
-
-            if (_capturedImage != null && !_resultReady) _buildAnalyzeButton(),
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPredictionResults() {
-    if (_allPredictions.isEmpty) return const SizedBox();
-
-    final topDisease = _predictionResult?["top_disease"] ?? "";
-    final topProb = _predictionResult?["top_probability"] ?? 0;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ── Section label ──────────────────────────────────────────
-          Row(
-            children: [
-              const Text(
-                "DETECTION RESULTS",
-                style: TextStyle(
-                  color: Color(0xFFAAAAAA),
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.1,
-                ),
-              ),
-              const Spacer(),
+            if (_uploadError != null) ...[
+              const SizedBox(height: 14),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: _green.withOpacity(0.10),
-                  borderRadius: BorderRadius.circular(20),
+                  color: DoctorCropColors.error.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: DoctorCropColors.error.withOpacity(0.2),
+                  ),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.auto_awesome_outlined, color: _green, size: 10),
-                    const SizedBox(width: 4),
-                    Text(
-                      "Genome Models",
-                      style: TextStyle(
-                        color: _green,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
+                    const Icon(
+                      Icons.error_outline_rounded,
+                      color: DoctorCropColors.error,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        _uploadError!,
+                        style: const TextStyle(
+                          color: DoctorCropColors.error,
+                          fontSize: 12.5,
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
             ],
-          ),
 
-          const SizedBox(height: 12),
+            if (_capturedImage != null && !_resultReady) ...[
+              const SizedBox(height: 16),
+              _buildAnalyzeButton(),
+            ],
 
-          // ── Top result highlight card ───────────────────────────────
+            if (_resultReady) ...[
+              const SizedBox(height: 20),
+              _buildPredictionResults(),
+              const SizedBox(height: 16),
+              _buildSubmitToAgronomist(),
+            ],
+
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIntroSection() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: DoctorCropColors.primaryLight.withOpacity(0.4),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: DoctorCropColors.primary.withOpacity(0.18),
+          width: 0.9,
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
-              color: Colors.transparent,
-              borderRadius: BorderRadius.circular(16),
+              color: DoctorCropColors.primaryLight,
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Row(
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: _orange.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.coronavirus_outlined,
-                    color: _orange,
-                    size: 22,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "Most likely disease",
-                        style: TextStyle(color: Colors.black38, fontSize: 10.5),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        topDisease,
-                        style: const TextStyle(
-                          color: Colors.black,
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w700,
-                          height: 1.3,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      "$topProb%",
-                      style: TextStyle(
-                        color: _orange,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const Text(
-                      "confidence",
-                      style: TextStyle(color: Colors.white38, fontSize: 10),
-                    ),
-                  ],
-                ),
-              ],
+            child: const Icon(
+              Icons.auto_awesome_rounded,
+              color: DoctorCropColors.primary,
+              size: 22,
             ),
           ),
-
-          const SizedBox(height: 12),
-
-          // ── All probabilities list ──────────────────────────────────
-          Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFFFAFAF8),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFEEEEEA), width: 0.9),
-            ),
+          const SizedBox(width: 12),
+          const Expanded(
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header row
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
-                  child: Row(
-                    children: const [
-                      Expanded(
-                        child: Text(
-                          "Disease name",
-                          style: TextStyle(
-                            color: Color(0xFFAAAAAA),
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      Text(
-                        "Probability",
-                        style: TextStyle(
-                          color: Color(0xFFAAAAAA),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
+                Text(
+                  "AI Crop Diagnostics",
+                  style: TextStyle(
+                    color: DoctorCropColors.textPrimary,
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-
-                Container(height: 0.8, color: const Color(0xFFEEEEEA)),
-
-                // Each prediction row
-                ..._allPredictions.asMap().entries.map((entry) {
-                  final index = entry.key;
-                  final p = entry.value;
-                  final disease = p["disease"].toString();
-                  final probability = (p["probability"] as num).toDouble();
-                  final isTop = index == 0;
-
-                  return Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                // Rank badge
-                                Container(
-                                  width: 22,
-                                  height: 22,
-                                  decoration: BoxDecoration(
-                                    color: isTop
-                                        ? _orange.withOpacity(0.12)
-                                        : const Color(0xFFEEEEEA),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: Text(
-                                    "${index + 1}",
-                                    style: TextStyle(
-                                      color: isTop
-                                          ? _orange
-                                          : const Color(0xFFAAAAAA),
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Text(
-                                    disease,
-                                    style: TextStyle(
-                                      color: isTop
-                                          ? const Color(0xFF111111)
-                                          : const Color(0xFF777777),
-                                      fontSize: 12.5,
-                                      fontWeight: isTop
-                                          ? FontWeight.w700
-                                          : FontWeight.w400,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Text(
-                                  "$probability%",
-                                  style: TextStyle(
-                                    color: isTop
-                                        ? _orange
-                                        : const Color(0xFFAAAAAA),
-                                    fontSize: 13,
-                                    fontWeight: isTop
-                                        ? FontWeight.w800
-                                        : FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-
-                            const SizedBox(height: 8),
-
-                            // Progress bar
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
-                              child: LinearProgressIndicator(
-                                value: probability / 100,
-                                minHeight: 5,
-                                backgroundColor: const Color(0xFFEEEEEA),
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  isTop ? _orange : const Color(0xFFCCCCCC),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      if (index < _allPredictions.length - 1)
-                        Container(
-                          height: 0.8,
-                          color: const Color(0xFFEEEEEA),
-                          margin: const EdgeInsets.symmetric(horizontal: 14),
-                        ),
-                    ],
-                  );
-                }).toList(),
+                SizedBox(height: 3),
+                Text(
+                  "1. Select crop variety  •  2. Capture affected leaf  •  3. Instant AI diagnosis with verified treatment options.",
+                  style: TextStyle(
+                    color: DoctorCropColors.textSecondary,
+                    fontSize: 12,
+                    height: 1.4,
+                  ),
+                ),
               ],
             ),
           ),
@@ -449,423 +298,265 @@ class _DiseaseDetectionPageState extends State<DiseaseDetectionPage>
     );
   }
 
-  // ── Intro ──────────────────────────────────────────────────────────────
-  Widget _buildIntroSection() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: _green.withOpacity(0.06),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: _green.withOpacity(0.18)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: _green.withOpacity(0.14),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(
-                Icons.auto_awesome_outlined,
-                color: _green,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "How it works",
-                    style: TextStyle(
-                      color: _ink,
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  SizedBox(height: 3),
-                  Text(
-                    "Select your crop, capture a clear photo of the affected leaf, then let Genome AI detect the disease and generate a report.",
-                    style: TextStyle(
-                      color: Color(0xFF555555),
-                      fontSize: 11.5,
-                      height: 1.45,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  bool cassavaIsFilled = false;
-  bool potatoIsFilled = false;
-  bool maizeIsFilled = false;
-  bool beansIsFilled = false;
-  bool tomatoIsFilled = false;
-
-  // ── Crop selector ──────────────────────────────────────────────────────
   Widget _buildCropSelector() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.fromLTRB(20, 22, 20, 10),
-          child: Text(
-            "SELECT CROP",
-            style: TextStyle(
-              color: Color(0xFFAAAAAA),
-              fontSize: 10.5,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.1,
-            ),
+        const Text(
+          "1. SELECT CROP VARIETY",
+          style: TextStyle(
+            color: DoctorCropColors.textMuted,
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.8,
           ),
         ),
+        const SizedBox(height: 10),
+        Row(
+          children: _crops.map((crop) {
+            final name = crop['name'] as String;
+            final isSelected = _selectedCrop == name;
+            final color = crop['color'] as Color;
 
-        Align(
-          alignment: Alignment.center,
-          child: SizedBox(
-            height: 82,
-            child: ListView.separated(
-              padding: const EdgeInsets.only(left: 80),
-              scrollDirection: Axis.horizontal,
-              itemCount: _crops.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 10),
-              itemBuilder: (context, i) {
-                final crop = _crops[i];
-                final selected = _selectedCrop == crop['name'];
-                final color = crop['color'] as Color;
-                return GestureDetector(
-                  onTap: () => setState(() {
-                    _selectedCrop = crop['name'];
-
+            return Expanded(
+              child: GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _selectedCrop = name;
                     _resultReady = false;
-                    _isAnalyzing = false;
-                    _analyzeStep = 0;
-                    _fadeController.reset();
-                  }),
-
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    width: 76,
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    decoration: BoxDecoration(
-                      color: selected ? color.withOpacity(0.10) : _surface,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: selected ? color : _border,
-                        width: selected ? 1.5 : 0.8,
-                      ),
+                    _uploadError = null;
+                  });
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: isSelected ? color.withOpacity(0.08) : Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: isSelected ? color : DoctorCropColors.border,
+                      width: isSelected ? 1.6 : 0.9,
                     ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          crop['icon'] as IconData,
-                          color: selected ? color : const Color(0xFFAAAAAA),
-                          size: 22,
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          crop['name'] as String,
-                          style: TextStyle(
-                            color: selected ? color : const Color(0xFF777777),
-                            fontSize: 11,
-                            fontWeight: selected
-                                ? FontWeight.w700
-                                : FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
+                    boxShadow: isSelected
+                        ? [
+                            BoxShadow(
+                              color: color.withOpacity(0.16),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ]
+                        : null,
                   ),
-                );
-              },
-            ),
-          ),
+                  child: Column(
+                    children: [
+                      Icon(
+                        crop['icon'] as IconData,
+                        color: isSelected ? color : DoctorCropColors.textMuted,
+                        size: 24,
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        name,
+                        style: TextStyle(
+                          color: isSelected ? color : DoctorCropColors.textPrimary,
+                          fontSize: 12.5,
+                          fontWeight:
+                              isSelected ? FontWeight.w700 : FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
         ),
       ],
     );
   }
 
-  // ── Camera section ─────────────────────────────────────────────────────
   Widget _buildCameraSection() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: EdgeInsets.only(bottom: 10),
-            child: Text(
-              "CAPTURE LEAF IMAGE",
-              style: TextStyle(
-                color: Color(0xFFAAAAAA),
-                fontSize: 10.5,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.1,
-              ),
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          "2. CAPTURE LEAF PHOTO",
+          style: TextStyle(
+            color: DoctorCropColors.textMuted,
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.8,
           ),
-          GestureDetector(
-            onTap: _selectedCrop == null ? null : _showImageSourceSheet,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              height: 240,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: _capturedImage != null ? Colors.black : _surface,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                  color: _capturedImage != null
-                      ? Colors.transparent
-                      : _selectedCrop != null
-                      ? _green.withOpacity(0.40)
-                      : _border,
-                  width: _selectedCrop != null && _capturedImage == null
-                      ? 1.5
-                      : 0.8,
-                ),
+        ),
+        const SizedBox(height: 10),
+        Container(
+          width: double.infinity,
+          height: 250,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: _capturedImage != null
+                  ? DoctorCropColors.primary
+                  : DoctorCropColors.border,
+              width: _capturedImage != null ? 1.5 : 0.9,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
               ),
-              clipBehavior: Clip.antiAlias,
-              child: _capturedImage != null
-                  ? Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        Image.file(_capturedImage!, fit: BoxFit.cover),
+            ],
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: _capturedImage != null
+              ? Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.file(_capturedImage!, fit: BoxFit.cover),
 
-                        // Remove image button
-                        Positioned(
-                          top: 12,
-                          right: 12,
-                          child: GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _cropImages[_selectedCrop!] = null;
-                                _resultReady = false;
-                                _isAnalyzing = false;
-                                _analyzeStep = 0;
-                              });
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.65),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.close_rounded,
-                                color: Colors.white,
-                                size: 18,
-                              ),
-                            ),
+                    // Clear photo button
+                    Positioned(
+                      top: 12,
+                      right: 12,
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _cropImages[_selectedCrop!] = null;
+                            _resultReady = false;
+                            _uploadError = null;
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.65),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.close_rounded,
+                            color: Colors.white,
+                            size: 18,
                           ),
                         ),
+                      ),
+                    ),
 
-                        // Retake button
-                        Positioned(
-                          bottom: 12,
-                          right: 12,
-                          child: GestureDetector(
-                            onTap: _showImageSourceSheet,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.65),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: const Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.refresh_rounded,
-                                    color: Colors.white,
-                                    size: 14,
-                                  ),
-                                  SizedBox(width: 5),
-                                  Text(
-                                    "Retake",
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                    // Retake pill button
+                    Positioned(
+                      bottom: 12,
+                      right: 12,
+                      child: GestureDetector(
+                        onTap: _showImageSourceSheet,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 8,
                           ),
-                        ),
-                      ],
-                    )
-                  : Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        AnimatedBuilder(
-                          animation: _pulseController,
-                          builder: (context, child) => Opacity(
-                            opacity: _selectedCrop != null
-                                ? 0.5 + (_pulseController.value * 0.5)
-                                : 0.3,
-                            child: child,
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.70),
+                            borderRadius: BorderRadius.circular(20),
                           ),
-                          child: Container(
-                            width: 64,
-                            height: 64,
-                            decoration: BoxDecoration(
-                              color: _selectedCrop != null
-                                  ? _green.withOpacity(0.10)
-                                  : Colors.grey.shade100,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.camera_alt_outlined,
-                              size: 28,
-                              color: _selectedCrop != null
-                                  ? _green
-                                  : Colors.grey.shade400,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                        Text(
-                          _selectedCrop != null
-                              ? "Tap to capture $_selectedCrop leaf"
-                              : "Select a crop first",
-                          style: TextStyle(
-                            color: _selectedCrop != null
-                                ? _ink
-                                : Colors.grey.shade400,
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          _selectedCrop != null
-                              ? "Make sure the leaf fills the frame clearly"
-                              : "Choose from the crop list above",
-                          style: const TextStyle(
-                            color: Color(0xFFBBBBBB),
-                            fontSize: 12,
-                          ),
-                        ),
-                        if (_selectedCrop != null) ...[
-                          const SizedBox(height: 18),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              _captureChip(
-                                Icons.camera_alt_outlined,
-                                "Camera",
-                                _green,
-                                () => _captureImage(ImageSource.camera),
+                              Icon(
+                                Icons.refresh_rounded,
+                                color: Colors.white,
+                                size: 15,
                               ),
-                              const SizedBox(width: 10),
-                              _captureChip(
-                                Icons.photo_library_outlined,
-                                "Gallery",
-                                _orange,
-                                () => _captureImage(ImageSource.gallery),
+                              SizedBox(width: 5),
+                              Text(
+                                "Retake",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                             ],
                           ),
-                        ],
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              : Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    AnimatedBuilder(
+                      animation: _pulseController,
+                      builder: (context, child) => Opacity(
+                        opacity: 0.6 + (_pulseController.value * 0.4),
+                        child: child,
+                      ),
+                      child: Container(
+                        width: 64,
+                        height: 64,
+                        decoration: BoxDecoration(
+                          color: DoctorCropColors.primaryLight,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.camera_alt_rounded,
+                          size: 30,
+                          color: DoctorCropColors.primary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      "Take photo of $_selectedCrop leaf",
+                      style: const TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w700,
+                        color: DoctorCropColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      "Ensure leaf is well-lit and fills the frame",
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: DoctorCropColors.textMuted,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        ElevatedButton.icon(
+                          onPressed: () => _captureImage(ImageSource.camera),
+                          icon: const Icon(Icons.camera_alt_outlined, size: 16),
+                          label: const Text("Camera"),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: DoctorCropColors.primary,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 18,
+                              vertical: 10,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        OutlinedButton.icon(
+                          onPressed: () => _captureImage(ImageSource.gallery),
+                          icon: const Icon(Icons.photo_library_outlined, size: 16),
+                          label: const Text("Gallery"),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 18,
+                              vertical: 10,
+                            ),
+                          ),
+                        ),
                       ],
                     ),
-            ),
-          ),
-          if (_selectedCrop != null && _capturedImage == null) ...[
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                _captureTip(Icons.wb_sunny_outlined, "Good lighting"),
-                const SizedBox(width: 8),
-                _captureTip(
-                  Icons.center_focus_strong_outlined,
-                  "Leaf in focus",
+                  ],
                 ),
-                const SizedBox(width: 8),
-                _captureTip(
-                  Icons.photo_size_select_large_outlined,
-                  "Fill frame",
-                ),
-              ],
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _captureChip(
-    IconData icon,
-    String label,
-    Color color,
-    VoidCallback onTap,
-  ) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(10),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: Colors.white, size: 15),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12.5,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _captureTip(IconData icon, String label) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        decoration: BoxDecoration(
-          color: _green.withOpacity(0.05),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: _green.withOpacity(0.15)),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, size: 15, color: _green),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                color: _greenDark,
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
+      ],
     );
   }
 
@@ -878,7 +569,7 @@ class _DiseaseDetectionPageState extends State<DiseaseDetectionPage>
       ),
       builder: (_) => SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -886,47 +577,82 @@ class _DiseaseDetectionPageState extends State<DiseaseDetectionPage>
                 width: 36,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
+                  color: Colors.grey.shade300,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
               const SizedBox(height: 16),
               const Text(
-                "Capture leaf image",
+                "Capture Crop Leaf Image",
                 style: TextStyle(
-                  color: _ink,
-                  fontSize: 14,
+                  color: DoctorCropColors.textPrimary,
+                  fontSize: 15,
                   fontWeight: FontWeight.w700,
                 ),
               ),
               const SizedBox(height: 4),
               const Text(
-                "Ensure good lighting and the leaf fills the frame",
-                style: TextStyle(color: Color(0xFFAAAAAA), fontSize: 12),
+                "Pick an option to provide a clear photo for diagnosis",
+                style: TextStyle(
+                  color: DoctorCropColors.textMuted,
+                  fontSize: 12,
+                ),
               ),
-              const SizedBox(height: 20),
-              _sheetOption(
-                icon: Icons.camera_alt_outlined,
-                label: "Take a photo",
-                sub: "Use your rear camera for best results",
-                color: _green,
+              const SizedBox(height: 18),
+              ListTile(
+                leading: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: DoctorCropColors.primaryLight,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.camera_alt_rounded,
+                    color: DoctorCropColors.primary,
+                  ),
+                ),
+                title: const Text(
+                  "Take photo with camera",
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
+                ),
+                subtitle: const Text(
+                  "Direct capture in natural sunlight",
+                  style: TextStyle(fontSize: 11.5),
+                ),
                 onTap: () {
                   Navigator.pop(context);
                   _captureImage(ImageSource.camera);
                 },
               ),
-              const SizedBox(height: 10),
-              _sheetOption(
-                icon: Icons.photo_library_outlined,
-                label: "Choose from gallery",
-                sub: "Pick an existing leaf photo",
-                color: _orange,
+              const SizedBox(height: 8),
+              ListTile(
+                leading: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: DoctorCropColors.accentLight,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.photo_library_rounded,
+                    color: DoctorCropColors.accent,
+                  ),
+                ),
+                title: const Text(
+                  "Choose from photo gallery",
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
+                ),
+                subtitle: const Text(
+                  "Select a previously saved leaf photo",
+                  style: TextStyle(fontSize: 11.5),
+                ),
                 onTap: () {
                   Navigator.pop(context);
                   _captureImage(ImageSource.gallery);
                 },
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
             ],
           ),
         ),
@@ -934,268 +660,264 @@ class _DiseaseDetectionPageState extends State<DiseaseDetectionPage>
     );
   }
 
-  Widget _sheetOption({
-    required IconData icon,
-    required String label,
-    required String sub,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.05),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: color.withOpacity(0.20)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: color, size: 20),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: TextStyle(
-                      color: _ink,
-                      fontSize: 13.5,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  Text(
-                    sub,
-                    style: const TextStyle(
-                      color: Color(0xFFAAAAAA),
-                      fontSize: 11.5,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              Icons.chevron_right_rounded,
-              size: 18,
-              color: color.withOpacity(0.40),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ── Analyze button ─────────────────────────────────────────────────────
   Widget _buildAnalyzeButton() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-      child: GestureDetector(
-        onTap: _isUploading
-            ? null
-            : () async {
-                await sendImageData();
-              },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          height: 52,
-          decoration: BoxDecoration(
-            color: _isUploading ? Colors.grey.shade400 : _green,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Center(
-            child: _isUploading
-                ? const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.4,
-                      color: Colors.white,
-                    ),
-                  )
-                : const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.auto_awesome_outlined,
-                        color: Colors.white,
-                        size: 18,
-                      ),
-                      SizedBox(width: 10),
-                      Text(
-                        "Analyse Image",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-          ),
+    return SizedBox(
+      width: double.infinity,
+      height: 50,
+      child: ElevatedButton.icon(
+        onPressed: _isUploading ? null : sendImageData,
+        icon: _isUploading
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+            : const Icon(Icons.auto_awesome_rounded, size: 18),
+        label: Text(
+          _isUploading
+              ? "Genome AI Analyzing..."
+              : "Analyze $_selectedCrop Leaf with AI",
+          style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700),
         ),
       ),
     );
   }
 
-  // ── Analyzing indicator ────────────────────────────────────────────────
-  Widget _buildAnalyzingIndicator() {
-    final steps = [
-      'Preprocessing image...',
-      'Extracting leaf features...',
-      'Running Genome AI model...',
-      'Generating report...',
-    ];
+  Widget _buildPredictionResults() {
+    if (_allPredictions.isEmpty) return const SizedBox();
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: _green.withOpacity(0.04),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: _green.withOpacity(0.18)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                AnimatedBuilder(
-                  animation: _pulseController,
-                  builder: (_, child) => Opacity(
-                    opacity: 0.4 + (_pulseController.value * 0.6),
-                    child: child,
-                  ),
-                  child: Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: _green,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
+    final topDisease = _predictionResult?["top_disease"] ?? "Unknown Condition";
+    final topProb = _predictionResult?["top_probability"] ?? 0;
+    final isHealthy = topDisease.toString().toLowerCase().contains("healthy");
+
+    return FadeTransition(
+      opacity: _fadeAnim,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text(
+                "3. AI DETECTION REPORT",
+                style: TextStyle(
+                  color: DoctorCropColors.textMuted,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.8,
                 ),
-                const SizedBox(width: 10),
-                const Text(
-                  "Genome AI is analyzing...",
-                  style: TextStyle(
-                    color: _ink,
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w700,
-                  ),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: DoctorCropColors.primaryLight,
+                  borderRadius: BorderRadius.circular(12),
                 ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            ...List.generate(steps.length, (i) {
-              final done = _analyzeStep > i;
-              final active = _analyzeStep == i + 1;
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Row(
+                child: const Row(
                   children: [
-                    SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: done
-                          ? const Icon(
-                              Icons.check_circle_rounded,
-                              color: _green,
-                              size: 18,
-                            )
-                          : active
-                          ? CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: _orange,
-                            )
-                          : Container(
-                              width: 16,
-                              height: 16,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(color: Colors.grey.shade300),
-                              ),
-                            ),
+                    Icon(
+                      Icons.auto_awesome_rounded,
+                      color: DoctorCropColors.primary,
+                      size: 11,
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 4),
                     Text(
-                      steps[i],
+                      "Genome Model v2",
                       style: TextStyle(
-                        color: done
-                            ? _green
-                            : active
-                            ? _ink
-                            : Colors.grey.shade400,
-                        fontSize: 12.5,
-                        fontWeight: done || active
-                            ? FontWeight.w600
-                            : FontWeight.w400,
+                        color: DoctorCropColors.primary,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ],
                 ),
-              );
-            }),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _tipCard(Map<String, dynamic> tip) {
-    final color = tip['color'] as Color;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.04),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withOpacity(0.18)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(tip['icon'] as IconData, color: color, size: 18),
+              ),
+            ],
           ),
-          const SizedBox(width: 12),
-          Expanded(
+
+          const SizedBox(height: 12),
+
+          // Primary Detected Condition Card
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: DoctorCropTheme.cardDecoration(hasShadow: true),
+            child: Row(
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: isHealthy
+                        ? DoctorCropColors.primaryLight
+                        : DoctorCropColors.accentLight,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(
+                    isHealthy ? Icons.eco_rounded : Icons.coronavirus_outlined,
+                    color: isHealthy
+                        ? DoctorCropColors.primary
+                        : DoctorCropColors.accent,
+                    size: 26,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        isHealthy ? "Crop Status" : "Primary Diagnosis",
+                        style: const TextStyle(
+                          color: DoctorCropColors.textMuted,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        topDisease,
+                        style: const TextStyle(
+                          color: DoctorCropColors.textPrimary,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        isHealthy
+                            ? "Leaf appears healthy with no infection detected"
+                            : "Treatment recommended to prevent spread",
+                        style: const TextStyle(
+                          color: DoctorCropColors.textSecondary,
+                          fontSize: 11.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      "$topProb%",
+                      style: TextStyle(
+                        color: isHealthy
+                            ? DoctorCropColors.primary
+                            : DoctorCropColors.accent,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const Text(
+                      "confidence",
+                      style: TextStyle(
+                        color: DoctorCropColors.textMuted,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 14),
+
+          // All Probabilities Breakdown Card
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: DoctorCropTheme.cardDecoration(),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  tip['title'] as String,
+                const Text(
+                  "All Analyzed Probabilities",
                   style: TextStyle(
-                    color: _ink,
-                    fontSize: 12.5,
+                    fontSize: 13,
                     fontWeight: FontWeight.w700,
+                    color: DoctorCropColors.textPrimary,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  tip['body'] as String,
-                  style: const TextStyle(
-                    color: Color(0xFF666666),
-                    fontSize: 12,
-                    height: 1.45,
-                  ),
-                ),
+                const SizedBox(height: 12),
+                ..._allPredictions.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final p = entry.value;
+                  final disease = p["disease"].toString();
+                  final probability = (p["probability"] as num).toDouble();
+                  final isTop = index == 0;
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 20,
+                              height: 20,
+                              decoration: BoxDecoration(
+                                color: isTop
+                                    ? DoctorCropColors.primary
+                                    : DoctorCropColors.surfaceMuted,
+                                shape: BoxShape.circle,
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                "${index + 1}",
+                                style: TextStyle(
+                                  color: isTop ? Colors.white : DoctorCropColors.textMuted,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                disease,
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: isTop ? FontWeight.w700 : FontWeight.w500,
+                                  color: isTop
+                                      ? DoctorCropColors.textPrimary
+                                      : DoctorCropColors.textSecondary,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              "$probability%",
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: isTop ? FontWeight.w800 : FontWeight.w500,
+                                color: isTop
+                                    ? DoctorCropColors.primary
+                                    : DoctorCropColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: LinearProgressIndicator(
+                            value: (probability / 100).clamp(0.0, 1.0),
+                            minHeight: 5,
+                            backgroundColor: DoctorCropColors.surfaceMuted,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              isTop
+                                  ? DoctorCropColors.primary
+                                  : DoctorCropColors.textMuted.withOpacity(0.4),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
               ],
             ),
           ),
@@ -1204,115 +926,103 @@ class _DiseaseDetectionPageState extends State<DiseaseDetectionPage>
     );
   }
 
-  // ── Submit to agronomist ───────────────────────────────────────────────
   Widget _buildSubmitToAgronomist() {
-    return FadeTransition(
-      opacity: _fadeAnim,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xFF111111),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: DoctorCropColors.textPrimary,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: _orange.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(
-                      Icons.send_outlined,
-                      color: _orange,
-                      size: 17,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "Submit to Agronomist",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        Text(
-                          "Send report for professional review",
-                          style: TextStyle(color: Colors.white38, fontSize: 11),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: DoctorCropColors.primary,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.send_rounded,
+                  color: Colors.white,
+                  size: 18,
+                ),
               ),
-              const SizedBox(height: 14),
-              Row(
-                children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () {},
-                      child: Container(
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: _green,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        alignment: Alignment.center,
-                        child: const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.groups_outlined,
-                              color: Colors.white,
-                              size: 16,
-                            ),
-                            SizedBox(width: 8),
-                            Text(
-                              "Send to Agronomist",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
-                        ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Submit to Local Agronomist",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  GestureDetector(
-                    onTap: () {},
-                    child: Container(
-                      height: 44,
-                      width: 44,
-                      decoration: BoxDecoration(
-                        color: _orange.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(
-                        Icons.download_outlined,
-                        color: _orange,
-                        size: 20,
-                      ),
+                    SizedBox(height: 2),
+                    Text(
+                      "Forward diagnostic report to regional extension officers in Rwanda.",
+                      style: TextStyle(color: Colors.white70, fontSize: 11),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
           ),
-        ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Diagnostic report sent to verified regional agronomist!"),
+                        backgroundColor: DoctorCropColors.primary,
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.people_rounded, size: 16),
+                  label: const Text("Send to Agronomist"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: DoctorCropColors.primary,
+                    minimumSize: const Size(double.infinity, 44),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Container(
+                height: 44,
+                width: 44,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: IconButton(
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("PDF report downloaded to phone memory"),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  },
+                  icon: const Icon(
+                    Icons.download_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

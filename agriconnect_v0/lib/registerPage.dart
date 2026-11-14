@@ -1,10 +1,9 @@
 import 'dart:convert';
-
 import 'package:agriconnect_v0/loadingpage.dart';
 import 'package:agriconnect_v0/notifier.dart';
+import 'package:agriconnect_v0/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:flutter/services.dart';
 
 class RegisterPage extends StatefulWidget {
   final Widget homePage;
@@ -19,22 +18,31 @@ class _RegisterPageState extends State<RegisterPage> {
   final PageController _pageController = PageController();
 
   final TextEditingController fullNameController = TextEditingController();
+  final TextEditingController locationController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-  final TextEditingController locationController = TextEditingController();
 
   int currentPage = 0;
+  bool _obscurePassword = true;
 
   void goNext() {
+    if (fullNameController.text.trim().isEmpty ||
+        locationController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Please enter your full name and farm location"),
+          backgroundColor: DoctorCropColors.accent,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
     _pageController.nextPage(
       duration: const Duration(milliseconds: 350),
       curve: Curves.easeInOut,
     );
   }
 
-  Map<String, String> message = {"message": "Loading market..."};
-
-  // Change fetchUsers return type to Future<bool>
   Future<bool> registeUser() async {
     final String uri = "http://192.168.50.36:8000/register";
     final url = Uri.parse(uri);
@@ -43,10 +51,10 @@ class _RegisterPageState extends State<RegisterPage> {
         url,
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
-          "full_name": fullNameController.text,
-          "phone_number": phoneController.text,
+          "full_name": fullNameController.text.trim(),
+          "phone_number": phoneController.text.trim(),
           "password": passwordController.text,
-          "location": locationController.text,
+          "location": locationController.text.trim(),
         }),
       );
 
@@ -56,8 +64,8 @@ class _RegisterPageState extends State<RegisterPage> {
           final uid = data['user_id'];
           sessionNotifier.value = SessionUser(
             userId: uid,
-            fullName: fullNameController.text,
-            phoneNumber: phoneController.text,
+            fullName: fullNameController.text.trim(),
+            phoneNumber: phoneController.text.trim(),
           );
           return true;
         }
@@ -70,20 +78,30 @@ class _RegisterPageState extends State<RegisterPage> {
     }
   }
 
-  // Change register() to pass the future to LoadingPage
   void register() {
-    final Future<bool> result = registeUser(); // start the call, don't await
+    if (phoneController.text.trim().isEmpty || passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Please provide your phone number and a password"),
+          backgroundColor: DoctorCropColors.accent,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    final Future<bool> result = registeUser();
 
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
         builder: (_) => LoadingPage(
           registrationFuture: result,
-          onSuccess: widget.homePage, // goes to home if true
+          onSuccess: widget.homePage,
           onFailure: RegisterPage(
             homePage: widget.homePage,
-          ), // back to register if false
-          loadingMessage: "Creating your account...",
+          ),
+          loadingMessage: "Creating your Doctor Crop account...",
         ),
       ),
     );
@@ -95,184 +113,370 @@ class _RegisterPageState extends State<RegisterPage> {
     fullNameController.dispose();
     phoneController.dispose();
     passwordController.dispose();
+    locationController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-        statusBarColor: Color(0xffF7F8F3),
-        statusBarIconBrightness: Brightness.dark,
-      ),
-    );
     return Scaffold(
-      backgroundColor: const Color(0xffF7F8F3),
+      backgroundColor: DoctorCropColors.background,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: DoctorCropColors.border, width: 0.8),
+            ),
+            child: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              size: 16,
+              color: DoctorCropColors.textPrimary,
+            ),
+          ),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
       body: SafeArea(
-        child: SafeArea(
-          child: Column(
-            children: [
-              Expanded(
-                child: PageView(
-                  controller: _pageController,
-                  physics: const NeverScrollableScrollPhysics(),
-                  onPageChanged: (index) {
-                    setState(() => currentPage = index);
-                  },
-                  children: [_nameStep(), _accountStep()],
-                ),
+        child: Column(
+          children: [
+            // Top Step Indicator Header
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+              child: Row(
+                children: [
+                  _stepIndicatorBadge(
+                    step: 1,
+                    title: "Farmer Info",
+                    isActive: currentPage >= 0,
+                    isCurrent: currentPage == 0,
+                  ),
+                  Expanded(
+                    child: Container(
+                      height: 2,
+                      margin: const EdgeInsets.symmetric(horizontal: 8),
+                      color: currentPage >= 1
+                          ? DoctorCropColors.primary
+                          : DoctorCropColors.border,
+                    ),
+                  ),
+                  _stepIndicatorBadge(
+                    step: 2,
+                    title: "Account Security",
+                    isActive: currentPage >= 1,
+                    isCurrent: currentPage == 1,
+                  ),
+                ],
               ),
-              Row(
+            ),
+
+            const SizedBox(height: 12),
+
+            Expanded(
+              child: PageView(
+                controller: _pageController,
+                physics: const NeverScrollableScrollPhysics(),
+                onPageChanged: (index) {
+                  setState(() => currentPage = index);
+                },
+                children: [
+                  _nameStep(),
+                  _accountStep(),
+                ],
+              ),
+            ),
+
+            // Pagination dots
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [_dot(0), const SizedBox(width: 8), _dot(1)],
               ),
-              const SizedBox(height: 20),
-            ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _stepIndicatorBadge({
+    required int step,
+    required String title,
+    required bool isActive,
+    required bool isCurrent,
+  }) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 26,
+          height: 26,
+          decoration: BoxDecoration(
+            color: isActive
+                ? DoctorCropColors.primary
+                : DoctorCropColors.surfaceMuted,
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: isActive
+                  ? DoctorCropColors.primary
+                  : DoctorCropColors.border,
+            ),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            "$step",
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: isActive ? Colors.white : DoctorCropColors.textMuted,
+            ),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w500,
+            color: isCurrent
+                ? DoctorCropColors.textPrimary
+                : DoctorCropColors.textMuted,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _nameStep() {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 440),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: DoctorCropTheme.cardDecoration(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _stepTitle(
+                  icon: Icons.person_pin_rounded,
+                  title: "Farmer Details",
+                  subtitle: "Enter your real names and farm region in Rwanda.",
+                ),
+
+                const SizedBox(height: 24),
+
+                const Text(
+                  "Full Names",
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: DoctorCropColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: fullNameController,
+                  textCapitalization: TextCapitalization.words,
+                  style: const TextStyle(fontSize: 14, color: DoctorCropColors.textPrimary),
+                  decoration: const InputDecoration(
+                    hintText: "e.g. Jean Damascene",
+                    prefixIcon: Icon(
+                      Icons.badge_outlined,
+                      size: 19,
+                      color: DoctorCropColors.primary,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 18),
+
+                const Text(
+                  "Farm Location / District",
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: DoctorCropColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: locationController,
+                  textCapitalization: TextCapitalization.words,
+                  style: const TextStyle(fontSize: 14, color: DoctorCropColors.textPrimary),
+                  decoration: const InputDecoration(
+                    hintText: "e.g. Musanze, Northern Province",
+                    prefixIcon: Icon(
+                      Icons.location_on_outlined,
+                      size: 19,
+                      color: DoctorCropColors.primary,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 32),
+
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: goNext,
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          "Continue to Account Details",
+                          style: TextStyle(
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        SizedBox(width: 8),
+                        Icon(Icons.arrow_forward_rounded, size: 18),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _nameStep() {
-    return Padding(
-      padding: const EdgeInsets.all(12),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: _cardDecoration(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _stepTitle(
-              icon: Icons.person_outline,
-              title: "Your Address",
-              subtitle: "Enter your real names to continue.",
-            ),
+  Widget _accountStep() {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 440),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: DoctorCropTheme.cardDecoration(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _stepTitle(
+                  icon: Icons.shield_outlined,
+                  title: "Account Security",
+                  subtitle: "Add your phone number and choose a secure password.",
+                ),
 
-            const SizedBox(height: 28),
+                const SizedBox(height: 24),
 
-            _input(
-              controller: fullNameController,
-              label: "Full names",
-              icon: Icons.badge_outlined,
-            ),
-
-            const SizedBox(height: 16),
-
-            _input(
-              controller: locationController,
-              label: "Location",
-              icon: Icons.location_on,
-            ),
-
-            const Spacer(),
-
-            Align(
-              alignment: Alignment.centerRight,
-              child: SizedBox(
-                width: MediaQuery.of(context).size.width * 0.4,
-                height: 45,
-                child: ElevatedButton(
-                  onPressed: goNext,
-                  style: _mainButtonStyle(),
-                  child: const Text(
-                    "Continue",
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                const Text(
+                  "Phone Number",
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: DoctorCropColors.textPrimary,
                   ),
                 ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+                const SizedBox(height: 6),
+                TextField(
+                  controller: phoneController,
+                  keyboardType: TextInputType.phone,
+                  style: const TextStyle(fontSize: 14, color: DoctorCropColors.textPrimary),
+                  decoration: const InputDecoration(
+                    hintText: "e.g. 0788 000 000",
+                    prefixIcon: Icon(
+                      Icons.phone_outlined,
+                      size: 19,
+                      color: DoctorCropColors.primary,
+                    ),
+                  ),
+                ),
 
-  Widget _accountStep() {
-    return Padding(
-      padding: const EdgeInsets.all(12),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: _cardDecoration(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _stepTitle(
-              icon: Icons.lock_outline,
-              title: "Account details",
-              subtitle: "Add your phone number and password.",
-            ),
+                const SizedBox(height: 18),
 
-            const SizedBox(height: 26),
+                const Text(
+                  "Create Password",
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: DoctorCropColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: passwordController,
+                  obscureText: _obscurePassword,
+                  style: const TextStyle(fontSize: 14, color: DoctorCropColors.textPrimary),
+                  decoration: InputDecoration(
+                    hintText: "Create a password",
+                    prefixIcon: const Icon(
+                      Icons.lock_outline_rounded,
+                      size: 19,
+                      color: DoctorCropColors.primary,
+                    ),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
+                        size: 19,
+                        color: DoctorCropColors.textMuted,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscurePassword = !_obscurePassword;
+                        });
+                      },
+                    ),
+                  ),
+                ),
 
-            _input(
-              controller: phoneController,
-              label: "Phone number",
-              icon: Icons.phone_outlined,
-              keyboardType: TextInputType.phone,
-            ),
+                const SizedBox(height: 32),
 
-            const SizedBox(height: 16),
-
-            _input(
-              controller: passwordController,
-              label: "Password",
-              icon: Icons.lock_outline,
-              obscureText: true,
-            ),
-
-            const Spacer(),
-
-            Row(
-              spacing: 70,
-              children: [
-                SizedBox(
-                  width: MediaQuery.of(context).size.width * 0.3,
-                  height: 45,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      _pageController.previousPage(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInOut,
-                      );
-                    },
-                    style: _mainButtonStyle(isBack: true),
-
-                    child: Row(
-                      spacing: 20,
-                      children: [
-                        Icon(
-                          Icons.arrow_back,
-                          size: 15,
-                          color: Colors.orange.shade800,
+                // Clean, responsive dual action buttons without overflow
+                Row(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          _pageController.previousPage(
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                          );
+                        },
+                        icon: const Icon(Icons.arrow_back_rounded, size: 16),
+                        label: const Text("Back"),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 13),
                         ),
-                        Text(
-                          "Back",
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 3,
+                      child: ElevatedButton(
+                        onPressed: register,
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 13),
+                        ),
+                        child: const Text(
+                          "Register Account",
                           style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.orange.shade800,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
-                      ],
+                      ),
                     ),
-                  ),
-                ),
-
-                SizedBox(
-                  width: MediaQuery.of(context).size.width * 0.4,
-                  height: 45,
-                  child: ElevatedButton(
-                    onPressed: register,
-                    style: _mainButtonStyle(),
-                    child: const Text(
-                      "Register",
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
+                  ],
                 ),
               ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -286,17 +490,15 @@ class _RegisterPageState extends State<RegisterPage> {
     return Row(
       children: [
         Container(
-          height: 42,
-          width: 42,
+          height: 44,
+          width: 44,
           decoration: BoxDecoration(
-            color: Colors.orange.shade100,
-            borderRadius: BorderRadius.circular(15),
+            color: DoctorCropColors.primaryLight,
+            borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(icon, color: Colors.orange.shade800),
+          child: Icon(icon, color: DoctorCropColors.primary, size: 22),
         ),
-
         const SizedBox(width: 14),
-
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -304,53 +506,24 @@ class _RegisterPageState extends State<RegisterPage> {
               Text(
                 title,
                 style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: DoctorCropColors.textPrimary,
+                  letterSpacing: -0.2,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 3),
               Text(
                 subtitle,
-                style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: DoctorCropColors.textSecondary,
+                ),
               ),
             ],
           ),
         ),
       ],
-    );
-  }
-
-  Widget _input({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    bool obscureText = false,
-    TextInputType keyboardType = TextInputType.text,
-  }) {
-    return TextField(
-      controller: controller,
-      obscureText: obscureText,
-      keyboardType: keyboardType,
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: TextStyle(fontSize: 12),
-        prefixIcon: Icon(icon, color: Colors.green.shade700, size: 15),
-        filled: true,
-        fillColor: const Color(0xffF7F8F3),
-        contentPadding: const EdgeInsets.symmetric(vertical: 5, horizontal: 14),
-
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(
-            color: Colors.greenAccent.shade700,
-            width: 0.5,
-          ),
-        ),
-      ),
     );
   }
 
@@ -362,37 +535,9 @@ class _RegisterPageState extends State<RegisterPage> {
       height: 8,
       width: active ? 28 : 8,
       decoration: BoxDecoration(
-        color: active ? Colors.greenAccent.shade700 : Colors.grey.shade300,
+        color: active ? DoctorCropColors.primary : DoctorCropColors.border,
         borderRadius: BorderRadius.circular(20),
       ),
-    );
-  }
-
-  BoxDecoration _cardDecoration() {
-    return BoxDecoration(
-      color: Colors.transparent,
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.06),
-          blurRadius: 18,
-          offset: const Offset(0, 8),
-        ),
-      ],
-    );
-  }
-
-  ButtonStyle _mainButtonStyle({bool isBack = false}) {
-    return ElevatedButton.styleFrom(
-      backgroundColor: isBack
-          ? Colors.transparent
-          : Colors.greenAccent.shade700,
-      foregroundColor: Colors.white,
-      elevation: 0,
-      side: isBack
-          ? BorderSide(color: Colors.orange.shade800, width: 1)
-          : BorderSide.none,
-
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
     );
   }
 }

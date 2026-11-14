@@ -1,5 +1,6 @@
 import 'package:agriconnect_v0/genomePage.dart';
 import 'package:agriconnect_v0/notifier.dart';
+import 'package:agriconnect_v0/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 
 class ProductDetailsPage extends StatelessWidget {
@@ -7,162 +8,147 @@ class ProductDetailsPage extends StatelessWidget {
 
   const ProductDetailsPage({super.key, required this.product});
 
-  String _shortDescription(String text) {
-    if (text.length <= 120) return text;
-    return "${text.substring(0, 120)}...";
-  }
-
   @override
   Widget build(BuildContext context) {
-    const black = Color(0xFF101214);
-    const green = Color(0xFF22C55E);
-    const blue = Color(0xFF2563EB);
-    const orange = Color(0xFFF97316);
-
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: DoctorCropColors.background,
       appBar: AppBar(
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        leading: GestureDetector(
-          onTap: () => Navigator.pop(context),
-          child: const Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: Colors.black54,
-            size: 15,
+        leading: IconButton(
+          icon: Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: DoctorCropColors.surfaceMuted,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: DoctorCropColors.border, width: 0.8),
+            ),
+            child: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: DoctorCropColors.textPrimary,
+              size: 16,
+            ),
           ),
+          onPressed: () => Navigator.pop(context),
         ),
         title: Column(
-          spacing: 5,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              spacing: 10,
-              children: [
-                Text(
-                  "Green Valley Agro Store",
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFF111111),
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.2,
-                  ),
-                ),
-                Icon(Icons.verified, color: green, size: 18),
-              ],
+            Text(
+              product.productName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: DoctorCropColors.textPrimary,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.2,
+              ),
             ),
             Row(
               children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.location_on_outlined,
-                      size: 13,
-                      color: Colors.black54,
-                    ),
-                    SizedBox(width: 6),
-                    Text(
-                      "Musanze, Rwanda",
-                      style: TextStyle(color: Colors.black87, fontSize: 10.5),
-                    ),
-                  ],
+                const Icon(
+                  Icons.location_on_outlined,
+                  size: 11,
+                  color: DoctorCropColors.primary,
                 ),
-                Spacer(),
-                const Row(
-                  children: [
-                    Icon(Icons.phone_outlined, size: 15, color: Colors.black45),
-                    SizedBox(width: 6),
-                    Text(
-                      "+250 788 123 456",
-                      style: TextStyle(color: Colors.black54, fontSize: 10.5),
-                    ),
-                  ],
+                const SizedBox(width: 3),
+                Text(
+                  product.location,
+                  style: const TextStyle(
+                    color: DoctorCropColors.textMuted,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ],
             ),
           ],
         ),
         actions: [
-          Container(
-            margin: const EdgeInsets.symmetric(vertical: 8),
-            width: 30,
-            height: 30,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF5F5F3),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFFE5E5E0), width: 0.8),
-            ),
-            child: IconButton(
-              onPressed: () {},
-              icon: const Icon(
+          IconButton(
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("Product link copied to clipboard"),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
+            icon: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: DoctorCropColors.surfaceMuted,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: DoctorCropColors.border, width: 0.8),
+              ),
+              child: const Icon(
                 Icons.share_outlined,
-                color: Color(0xFF555555),
+                color: DoctorCropColors.textSecondary,
                 size: 18,
               ),
-              padding: const EdgeInsets.all(6),
-              constraints: const BoxConstraints(),
             ),
           ),
-          const SizedBox(width: 8),
-          Container(
-            width: 30,
-            height: 30,
-            margin: const EdgeInsets.only(top: 8, bottom: 8, right: 14),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF5F5F3),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFFE5E5E0), width: 0.8),
-            ),
-            child: IconButton(
-              onPressed: () {},
-              icon: const Icon(
-                Icons.favorite_border_rounded,
-                color: Color(0xFF555555),
-                size: 18,
-              ),
-              padding: const EdgeInsets.all(6),
-              constraints: const BoxConstraints(),
-            ),
-          ),
+          const SizedBox(width: 6),
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
-          child: Container(height: 0.8, color: const Color(0xFFEEEEEA)),
+          child: Container(height: 0.9, color: DoctorCropColors.border),
         ),
       ),
+
+      // ── Clean Non-Overlapping Bottom Bar ─────────────────────────────
       bottomNavigationBar: Container(
-        padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border(
-            top: BorderSide(color: Colors.black.withOpacity(0.07)),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 16,
-              offset: const Offset(0, -4),
-            ),
-          ],
-        ),
+        decoration: DoctorCropTheme.bottomNavDecoration(),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
         child: SafeArea(
+          top: false,
           child: Row(
             children: [
-              const SizedBox(width: 10),
+              // Chat / Message Seller button
+              Container(
+                height: 48,
+                width: 48,
+                decoration: BoxDecoration(
+                  color: DoctorCropColors.surfaceMuted,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: DoctorCropColors.border, width: 0.9),
+                ),
+                child: IconButton(
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text("Messaging seller for ${product.productName}"),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  },
+                  icon: const Icon(
+                    Icons.chat_bubble_outline_rounded,
+                    color: DoctorCropColors.textPrimary,
+                    size: 20,
+                  ),
+                ),
+              ),
+
+              const SizedBox(width: 12),
+
+              // Primary Order CTA
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: () {},
-                  icon: const Icon(Icons.shopping_cart_outlined, size: 20),
-                  label: const Text("Order"),
+                  onPressed: () {
+                    _showOrderConfirmation(context);
+                  },
+                  icon: const Icon(Icons.shopping_bag_outlined, size: 18),
+                  label: Text("Order Now · ${product.priceRwf} RWF"),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: green,
-                    foregroundColor: Colors.white,
+                    backgroundColor: DoctorCropColors.primary,
                     minimumSize: const Size(double.infinity, 48),
-                    textStyle: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                 ),
@@ -171,218 +157,316 @@ class ProductDetailsPage extends StatelessWidget {
           ),
         ),
       ),
-      body: Stack(
+
+      body: ListView(
+        padding: const EdgeInsets.all(16),
         children: [
-          ListView(
-            padding: EdgeInsets.only(top: 15, left: 10, right: 10),
-            children: [
-              Stack(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: Image.network(
-                      product.imageUrl,
-                      width: double.infinity,
-                      height: 200,
-                      fit: BoxFit.cover,
+          // Hero Product Image with Badges
+          Container(
+            decoration: DoctorCropTheme.cardDecoration(hasShadow: true),
+            clipBehavior: Clip.antiAlias,
+            child: Stack(
+              children: [
+                Image.network(
+                  product.imageUrl,
+                  width: double.infinity,
+                  height: 220,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    height: 220,
+                    color: DoctorCropColors.surfaceMuted,
+                    child: const Center(
+                      child: Icon(
+                        Icons.image_not_supported_outlined,
+                        size: 40,
+                        color: DoctorCropColors.textMuted,
+                      ),
                     ),
                   ),
+                ),
 
-                  // 🌙 Dark gradient for text readability
-                  Container(
-                    height: 200,
+                // Gradient text overlay for contrast
+                Container(
+                  height: 220,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withOpacity(0.65),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Location badge (top left)
+                Positioned(
+                  top: 14,
+                  left: 14,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-
-                        colors: [
-                          Colors.transparent,
-                          Colors.black.withOpacity(0.7),
-                        ],
-                      ),
+                      color: DoctorCropColors.primary,
+                      borderRadius: BorderRadius.circular(20),
                     ),
-                  ),
-
-                  // 🏷️ Category badge (top left)
-                  Positioned(
-                    top: 16,
-                    left: 16,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF22C55E),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        "category",
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  // 💰 Price badge (top right)
-                  Positioned(
-                    top: 16,
-                    right: 16,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF97316),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        '${product.priceRwf}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  // 🧠 Bottom text overlay
-                  Positioned(
-                    bottom: 16,
-                    left: 16,
-                    right: 16,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
+                        const Icon(Icons.location_on, color: Colors.white, size: 11),
+                        const SizedBox(width: 4),
                         Text(
-                          product.productName,
+                          product.location,
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            height: 1.2,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: const [
-                            Icon(
-                              Icons.verified,
-                              color: Color(0xFF22C55E),
-                              size: 16,
-                            ),
-                            SizedBox(width: 4),
-                            Text(
-                              "Verified Farm Product",
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 11,
-                              ),
-                            ),
-                          ],
                         ),
                       ],
                     ),
                   ),
-                ],
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(5, 16, 5, 95),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Store card
-                    const SizedBox(height: 14),
+                ),
 
-                    // One combined description card
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
+                // Price badge (top right)
+                Positioned(
+                  top: 14,
+                  right: 14,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: DoctorCropColors.accent,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      "${product.priceRwf} RWF",
+                      style: const TextStyle(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: Colors.black.withOpacity(0.06),
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.035),
-                            blurRadius: 10,
-                            offset: const Offset(0, 5),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        children: [
-                          _infoLine(
-                            icon: Icons.description_outlined,
-                            title: "Description",
-                            text: _shortDescription(product.description),
-                            color: green,
-                          ),
-                          const Divider(height: 22),
-
-                          _infoLine(
-                            icon: Icons.verified_user_outlined,
-                            title: "Seller information",
-                            text:
-                                "Verified agro-seller. Contact the store to confirm stock, quantity, and delivery.",
-                            color: blue,
-                          ),
-                          const Divider(height: 22),
-
-                          _infoLine(
-                            icon: Icons.health_and_safety_outlined,
-                            title: "Usage note",
-                            text:
-                                "For farm medicines, confirm dosage and safety guidance with an agronomist or veterinarian.",
-                            color: orange,
-                          ),
-                          const Divider(height: 22),
-
-                          _infoLine(
-                            icon: Icons.local_shipping_outlined,
-                            title: "Delivery",
-                            text:
-                                "Delivery depends on location, order size, and seller agreement.",
-                            color: black,
-                          ),
-                        ],
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
+                  ),
+                ),
 
-                    const SizedBox(height: 14),
-
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: blue.withOpacity(0.08),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: blue.withOpacity(0.18)),
+                // Bottom title & verification
+                Positioned(
+                  bottom: 14,
+                  left: 16,
+                  right: 16,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        product.productName,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 19,
+                          fontWeight: FontWeight.w800,
+                          height: 1.2,
+                        ),
                       ),
-                      child: const Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      const SizedBox(height: 4),
+                      const Row(
                         children: [
                           Icon(
-                            Icons.auto_awesome_rounded,
-                            color: blue,
-                            size: 22,
+                            Icons.verified_rounded,
+                            color: Color(0xFF4ADE80),
+                            size: 15,
                           ),
-                          SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              "Genome AI can explain product usage, benefits, risks, storage, and market value.",
-                              style: TextStyle(
-                                fontSize: 12.5,
-                                height: 1.45,
-                                color: Colors.black87,
-                              ),
+                          SizedBox(width: 5),
+                          Text(
+                            "Certified Doctor Crop Supply",
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Genome AI Helper Card
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const GenomeAIPage()),
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: DoctorCropColors.info.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: DoctorCropColors.info.withOpacity(0.2),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: DoctorCropColors.info.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.auto_awesome_rounded,
+                      color: DoctorCropColors.info,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Consult Genome AI Assistant",
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: DoctorCropColors.textPrimary,
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          "Ask about exact dosage, soil application, and harvest compatibility.",
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            color: DoctorCropColors.textSecondary,
+                            height: 1.35,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    color: DoctorCropColors.info,
+                    size: 20,
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Specification & Information Breakdown
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: DoctorCropTheme.cardDecoration(),
+            child: Column(
+              children: [
+                _infoLine(
+                  icon: Icons.description_outlined,
+                  title: "Product Description",
+                  text: product.description,
+                  color: DoctorCropColors.primary,
+                ),
+                const Divider(height: 24),
+                _infoLine(
+                  icon: Icons.verified_user_outlined,
+                  title: "Certified Agro Seller",
+                  text:
+                      "Verified retail store in ${product.location}. Products undergo quality review for agricultural authenticity and potency.",
+                  color: DoctorCropColors.info,
+                ),
+                const Divider(height: 24),
+                _infoLine(
+                  icon: Icons.health_and_safety_outlined,
+                  title: "Safety & Application Note",
+                  text:
+                      "Always verify application timing, protective gear, and dilution rates before applying farm chemicals or treatments.",
+                  color: DoctorCropColors.accent,
+                ),
+                const Divider(height: 24),
+                _infoLine(
+                  icon: Icons.local_shipping_outlined,
+                  title: "Pickup & Delivery",
+                  text:
+                      "Same-day pickup available at store location or local farm delivery arranged with seller.",
+                  color: DoctorCropColors.textPrimary,
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+
+  void _showOrderConfirmation(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: DoctorCropColors.primaryLight,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.shopping_bag_outlined,
+                        color: DoctorCropColors.primary,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            product.productName,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: DoctorCropColors.textPrimary,
+                            ),
+                          ),
+                          Text(
+                            "${product.priceRwf} RWF · In stock at ${product.location}",
+                            style: const TextStyle(
+                              fontSize: 12.5,
+                              color: DoctorCropColors.textSecondary,
                             ),
                           ),
                         ],
@@ -390,54 +474,47 @@ class ProductDetailsPage extends StatelessWidget {
                     ),
                   ],
                 ),
-              ),
-            ],
-          ),
-          // Positioned(
-          //   bottom: 60, // 👈 IMPORTANT (see below)
-          //   right: 16,
-          //   child: Container(
-          //     padding: EdgeInsets.all(10),
-          //     decoration: BoxDecoration(
-          //       color: Colors.blue,
-          //       borderRadius: BorderRadius.circular(5),
-          //     ),
-          //     child: Icon(Icons.message_outlined, color: Colors.white),
-          //   ),
-          // ),
-          Positioned(
-            bottom: 60, // 👈 IMPORTANT (see below)
-            right: 16,
-            child: ElevatedButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.message_outlined, size: 20),
-              label: const Text("Message"),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                foregroundColor: Colors.white,
-              ),
+                const SizedBox(height: 20),
+                const Text(
+                  "Order Confirmation",
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: DoctorCropColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  "By submitting this order, a notification will be delivered directly to the store manager to prepare your package.",
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    color: DoctorCropColors.textSecondary,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text("Order placed for ${product.productName}!"),
+                          backgroundColor: DoctorCropColors.primary,
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    },
+                    child: const Text("Confirm & Place Order"),
+                  ),
+                ),
+              ],
             ),
           ),
-          Positioned(
-            bottom: 10, // 👈 IMPORTANT (see below)
-            right: 16,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => GenomeAIPage()),
-                );
-              },
-              icon: const Icon(Icons.auto_awesome_rounded, size: 20),
-              label: const Text("Genome AI"),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black,
-                foregroundColor: Colors.white,
-              ),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -450,8 +527,16 @@ class ProductDetailsPage extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 20, color: color),
-        const SizedBox(width: 10),
+        Container(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.10),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, size: 18, color: color),
+        ),
+        const SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -461,57 +546,22 @@ class ProductDetailsPage extends StatelessWidget {
                 style: TextStyle(
                   color: color,
                   fontSize: 13,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 text,
                 style: const TextStyle(
-                  color: Colors.black87,
+                  color: DoctorCropColors.textSecondary,
                   fontSize: 12.5,
-                  height: 1.4,
+                  height: 1.45,
                 ),
               ),
             ],
           ),
         ),
       ],
-    );
-  }
-
-  Widget _traditionalBox({required String title, required String text}) {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.black.withOpacity(0.06)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              color: Color(0xFF101214),
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            text,
-            style: const TextStyle(
-              color: Colors.black87,
-              fontSize: 12.5,
-              height: 1.45,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
